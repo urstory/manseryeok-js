@@ -1,4 +1,4 @@
-# @urstory/manseryeok
+# @fullstackfamily/manseryeok
 
 Korean Lunar Calendar (만세력) JavaScript Library
 
@@ -30,7 +30,7 @@ Korean Lunar Calendar (만세력) JavaScript Library
 ## 설치
 
 ```bash
-npm install @urstory/manseryeok
+npm install @fullstackfamily/manseryeok
 ```
 
 ## 사용법
@@ -38,7 +38,7 @@ npm install @urstory/manseryeok
 ### 양력 → 음력 변환 (2024년 설날 예시)
 
 ```ts
-import { solarToLunar } from '@urstory/manseryeok';
+import { solarToLunar } from '@fullstackfamily/manseryeok';
 
 const result = solarToLunar(2024, 2, 10);
 console.log('양력:', result.solar.year, '년', result.solar.month, '월', result.solar.day, '일');
@@ -56,7 +56,7 @@ console.log('갑자:', result.gapja.yearPillar, '년', result.gapja.monthPillar,
 ### 생일날 음력과 갑자 알아보기
 
 ```ts
-import { solarToLunar } from '@urstory/manseryeok';
+import { solarToLunar } from '@fullstackfamily/manseryeok';
 
 function formatBirthday(solarYear: number, solarMonth: number, solarDay: number) {
   const result = solarToLunar(solarYear, solarMonth, solarDay);
@@ -80,7 +80,7 @@ formatBirthday(1990, 5, 15);
 ### 음력 → 양력 변환 (음력 생일을 양력으로 찾기)
 
 ```ts
-import { lunarToSolar } from '@urstory/manseryeok';
+import { lunarToSolar } from '@fullstackfamily/manseryeok';
 
 const result = lunarToSolar(2024, 1, 1, false); // 2024년 정월 초하루
 console.log('음력 2024년 1월 1일 = 양력', result.solar.year, '년', result.solar.month, '월', result.solar.day, '일');
@@ -90,7 +90,7 @@ console.log('음력 2024년 1월 1일 = 양력', result.solar.year, '년', resul
 ### 윤달 날짜 변환
 
 ```ts
-import { lunarToSolar } from '@urstory/manseryeok';
+import { lunarToSolar } from '@fullstackfamily/manseryeok';
 
 // 윤달 4월 1일 (예: 1985년)
 const leapMonthResult = lunarToSolar(1985, 4, 1, true); // isLeapMonth: true
@@ -104,7 +104,7 @@ console.log('평4월 1일 → 양력:', normalMonthResult.solar.year, '년', nor
 ### 갑자(60갑자) 계산
 
 ```ts
-import { getGapja } from '@urstory/manseryeok';
+import { getGapja } from '@fullstackfamily/manseryeok';
 
 // 1984년 갑자년 (입춘 이후)
 const gapja1 = getGapja(1984, 2, 4);
@@ -122,7 +122,7 @@ console.log('1984년 2월 2일 (입춘 전):', gapja2.yearPillar, '년');
 ### 내 생일의 사주팔자 구하기
 
 ```ts
-import { getGapja } from '@urstory/manseryeok';
+import { getGapja } from '@fullstackfamily/manseryeok';
 
 function getMySaju(birthYear: number, birthMonth: number, birthDay: number, birthHour: number = 0) {
   const gapja = getGapja(birthYear, birthMonth, birthDay);
@@ -147,7 +147,7 @@ getMySaju(1984, 2, 2);
 ### 양력/음력 달력 만들기
 
 ```ts
-import { solarToLunar } from '@urstory/manseryeok';
+import { solarToLunar } from '@fullstackfamily/manseryeok';
 
 function printCalendar(year: number, month: number) {
   console.log(`\n=== ${year}년 ${month}월 ===`);
@@ -171,7 +171,7 @@ printCalendar(2024, 2);
 ### 대량 날짜 변환 (파일 처리 등)
 
 ```ts
-import { solarToLunar } from '@urstory/manseryeok';
+import { solarToLunar } from '@fullstackfamily/manseryeok';
 
 function batchConvert(dates: Array<{ year: number; month: number; day: number }>) {
   return dates.map(date => {
@@ -197,7 +197,7 @@ console.table(results);
 ### 날짜 유효성 검사
 
 ```ts
-import { solarToLunar, OutOfRangeError, InvalidDateError } from '@urstory/manseryeok';
+import { solarToLunar, OutOfRangeError, InvalidDateError } from '@fullstackfamily/manseryeok';
 
 function isValidDate(year: number, month: number, day: number): boolean {
   try {
@@ -222,7 +222,7 @@ console.log(isValidDate(2024, 2, 10));  // true
 ### 60갑자 데이터 직접 조회
 
 ```ts
-import { SIXTY_PILLARS, getPillarById, getPillarByHangul } from '@urstory/manseryeok';
+import { SIXTY_PILLARS, getPillarById, getPillarByHangul } from '@fullstackfamily/manseryeok';
 
 // 전체 60갑자 목록
 console.log('총 60갑자 개수:', SIXTY_PILLARS.length);
@@ -242,7 +242,7 @@ console.log('갑자의 음양:', found?.yinYang); // 양
 ### 24절기 정보 조회
 
 ```ts
-import { getAllSolarTerms, getSolarTermByName, getSolarTermsBySajuMonth } from '@urstory/manseryeok';
+import { getAllSolarTerms, getSolarTermByName, getSolarTermsBySajuMonth } from '@fullstackfamily/manseryeok';
 
 // 전체 24절기 목록
 const allTerms = getAllSolarTerms();
@@ -263,7 +263,7 @@ console.log('2월(인월) 절기:', februaryTerms.map(t => t.name).join(', '));
 ### 사주 월 계산 (절기 기준)
 
 ```ts
-import { getSajuMonth } from '@urstory/manseryeok';
+import { getSajuMonth } from '@fullstackfamily/manseryeok';
 
 // 양력 날짜를 사주 월로 변환
 // 사주에서 월은 절기를 기준으로 변경됩니다
@@ -280,7 +280,7 @@ console.log('3월 7일:', getSajuMonth(3, 7));  // 3 (경칩 후, 3월 시작!)
 ### 24절기 한눈에 보기
 
 ```ts
-import { getAllSolarTerms } from '@urstory/manseryeok';
+import { getAllSolarTerms } from '@fullstackfamily/manseryeok';
 
 function printSolarTerms() {
   const terms = getAllSolarTerms();
@@ -307,7 +307,7 @@ printSolarTerms();
 ### 특정 연도의 절기 시각 조회
 
 ```ts
-import { getSolarTermsByYear, getSolarTermForDate } from '@urstory/manseryeok';
+import { getSolarTermsByYear, getSolarTermForDate } from '@fullstackfamily/manseryeok';
 
 // 2024년 모든 절기 시각 조회
 const terms2024 = getSolarTermsByYear(2024);
@@ -331,7 +331,7 @@ if (term) {
 ### 특정 월의 절기 목록
 
 ```ts
-import { getSolarTermsByMonth } from '@urstory/manseryeok';
+import { getSolarTermsByMonth } from '@fullstackfamily/manseryeok';
 
 // 2024년 2월의 절기
 const februaryTerms = getSolarTermsByMonth(2024, 2);
@@ -345,7 +345,7 @@ februaryTerms.forEach(term => {
 ### 지원되는 절기 연도 확인
 
 ```ts
-import { getSupportedSolarTermYears } from '@urstory/manseryeok';
+import { getSupportedSolarTermYears } from '@fullstackfamily/manseryeok';
 
 const supportedYears = getSupportedSolarTermYears();
 console.log('절기 데이터 지원 연도:', supportedYears.join(', '));

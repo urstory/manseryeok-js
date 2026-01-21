@@ -1,5 +1,5 @@
 /**
- * @urstory/manseryeok
+ * @fullstackfamily/manseryeok
  *
  * Korean Lunar Calendar (만세력) JavaScript Library
  *
@@ -9,7 +9,7 @@
  *
  * @example
  * ```ts
- * import { solarToLunar, getGapja } from '@urstory/manseryeok';
+ * import { solarToLunar, getGapja } from '@fullstackfamily/manseryeok';
  *
  * // 양력 → 음력 변환
  * const lunar = solarToLunar(2024, 2, 10);
@@ -22,7 +22,7 @@
  * ```
  *
  * @license MIT
- * @author urstory
+ * @author fullstackfamily
  * @copyright 2026
  */
 

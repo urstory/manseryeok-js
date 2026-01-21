@@ -1,5 +1,5 @@
 {
-  "name": "@urstory/manseryeok",
+  "name": "@fullstackfamily/manseryeok",
   "version": "1.0.0",
   "type": "module",
   "description": "Korean Lunar Calendar (만세력) JavaScript Library - 1900~2050년 지원, DB 없는 순수 JavaScript 구현",
@@ -32,11 +32,11 @@
     "fortune",
     "운세"
   ],
-  "author": "urstory",
+  "author": "fullstackfamily",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/urstory/manseryeok-js.git"
+    "url": "git+https://github.com/urstory/manseryeok-js.git"
   },
   "bugs": {
     "url": "https://github.com/urstory/manseryeok-js/issues"

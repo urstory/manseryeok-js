@@ -1,4 +1,4 @@
-# Contributing to @urstory/manseryeok
+# Contributing to @fullstackfamily/manseryeok
 
 기여해 주셔서 감사합니다! 이 프로젝트에 기여하는 방법을 안내해 드립니다.
 
@@ -8,7 +8,7 @@
 
 이슈를 생성할 때 다음 정보를 포함해 주시면 도움이 됩니다:
 
-- 버전 정보 (`@urstory/manseryeok` 버전)
+- 버전 정보 (`@fullstackfamily/manseryeok` 버전)
 - 사용 중인 Node.js 버전
 - 재현 가능한 코드 예시
 - 기대 동작과 실제 동작
