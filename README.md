@@ -239,6 +239,121 @@ console.log('갑자의 오행:', found?.element); // 목
 console.log('갑자의 음양:', found?.yinYang); // 양
 ```
 
+### 24절기 정보 조회
+
+```ts
+import { getAllSolarTerms, getSolarTermByName, getSolarTermsBySajuMonth } from '@urstory/manseryeok';
+
+// 전체 24절기 목록
+const allTerms = getAllSolarTerms();
+console.log('24절기 개수:', allTerms.length);
+// 24절기 개수: 24
+
+// 절기 이름으로 조회
+const ipchun = getSolarTermByName('입춘');
+console.log('입춘:', ipchun?.nameHanja, '황경', ipchun?.longitude, '°');
+// 입춘: 立春 황경 315 °
+
+// 사주 월에 해당하는 절기 목록
+const februaryTerms = getSolarTermsBySajuMonth(2);
+console.log('2월(인월) 절기:', februaryTerms.map(t => t.name).join(', '));
+// 2월(인월) 절기: 입춘, 우수
+```
+
+### 사주 월 계산 (절기 기준)
+
+```ts
+import { getSajuMonth } from '@urstory/manseryeok';
+
+// 양력 날짜를 사주 월로 변환
+// 사주에서 월은 절기를 기준으로 변경됩니다
+
+console.log('2월 1일:', getSajuMonth(2, 1));  // 1 (소우, 아직 1월)
+console.log('2월 5일:', getSajuMonth(2, 5));  // 1 (입춘 전)
+console.log('2월 6일:', getSajuMonth(2, 6));  // 2 (입추 후, 2월 시작!)
+// 입춘(2월 4일경) 이후부터 2월로 계산
+
+console.log('3월 5일:', getSajuMonth(3, 5));  // 2 (경칩 전)
+console.log('3월 7일:', getSajuMonth(3, 7));  // 3 (경칩 후, 3월 시작!)
+```
+
+### 24절기 한눈에 보기
+
+```ts
+import { getAllSolarTerms } from '@urstory/manseryeok';
+
+function printSolarTerms() {
+  const terms = getAllSolarTerms();
+
+  console.log('\n=== 한국 24절기 ===');
+  console.log('계절\t절기\t\t한자\t\t황경\t사주월');
+  console.log(''.padEnd(60, '-'));
+
+  const seasons = ['봄', '봄', '봄', '봄', '봔', '봔',
+                   '여름', '여름', '여름', '여름', '여름', '여름',
+                   '가을', '가을', '가을', '가을', '가을', '가을',
+                   '겨울', '겨울', '겨울', '겨울', '겨울', '겨울'];
+
+  terms.forEach((term, i) => {
+    const season = seasons[i];
+    const typeStr = term.type === 'jeolgi' ? '절기' : '중기';
+    console.log(`${season}\t${term.name}\t\t${term.hanja}\t\t${term.longitude}°\t${term.sajuMonth}월`);
+  });
+}
+
+printSolarTerms();
+```
+
+### 특정 연도의 절기 시각 조회
+
+```ts
+import { getSolarTermsByYear, getSolarTermForDate } from '@urstory/manseryeok';
+
+// 2024년 모든 절기 시각 조회
+const terms2024 = getSolarTermsByYear(2024);
+terms2024.forEach(term => {
+  console.log(`${term.name} (${term.nameHanja}): ${term.month}월 ${term.day}일 ${term.hour}시 ${term.minute}분`);
+});
+// 입춘 (立春): 2월 4일 5시 2분
+// 우수 (雨水): 2월 19일 0시 51분
+// ...
+
+// 특정 날짜의 절기 확인
+const term = getSolarTermForDate(2024, 2, 4);
+if (term) {
+  console.log('2024년 2월 4일은', term.name, '입니다');
+  console.log('절기 시각:', term.month, '월', term.day, '일', term.hour, '시', term.minute, '분');
+}
+// 2024년 2월 4일은 입춘 입니다
+// 절기 시각: 2 월 4 일 5 시 2 분
+```
+
+### 특정 월의 절기 목록
+
+```ts
+import { getSolarTermsByMonth } from '@urstory/manseryeok';
+
+// 2024년 2월의 절기
+const februaryTerms = getSolarTermsByMonth(2024, 2);
+februaryTerms.forEach(term => {
+  console.log(`${term.month}/${term.day} ${term.hour}:${String(term.minute).padStart(2, '0')} - ${term.name} (${term.nameHanja})`);
+});
+// 2/4 5:02 - 입춘 (立春)
+// 2/19 1:23 - 우수 (雨水)
+```
+
+### 지원되는 절기 연도 확인
+
+```ts
+import { getSupportedSolarTermYears } from '@urstory/manseryeok';
+
+const supportedYears = getSupportedSolarTermYears();
+console.log('절기 데이터 지원 연도:', supportedYears.join(', '));
+// 절기 데이터 지원 연도: 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030
+
+// 참고: 향후 1900~2050년 전체 데이터로 확장 예정
+```
+
 ## API 문서
 
 ### `solarToLunar(solarYear, solarMonth, solarDay)`
@@ -278,6 +393,55 @@ console.log('갑자의 음양:', found?.yinYang); // 양
 - `solarDay`: 양력 일
 
 **반환값:** `GapjaResult`
+
+### `getAllSolarTerms()`
+
+전체 24절기 정보를 조회합니다.
+
+**반환값:** 24절기 정보 배열
+
+### `getSolarTermByName(name)`
+
+절기 이름으로 절기 정보를 조회합니다.
+
+**매개변수:**
+- `name`: 절기 이름 (예: '입춘', '경칩', '동지')
+
+**반환값:** 절기 정보 또는 undefined
+
+### `getSolarTermByIndex(index)`
+
+절기 인덱스로 절기 정보를 조회합니다.
+
+**매개변수:**
+- `index`: 절기 인덱스 (0~23)
+
+**반환값:** 절기 정보
+
+**예외:**
+- `RangeError`: 유효하지 않은 인덱스
+
+### `getSolarTermsBySajuMonth(sajuMonth)`
+
+사주 월에 해당하는 절기 목록을 조회합니다.
+
+**매개변수:**
+- `sajuMonth`: 사주 월 (1~12)
+
+**반환값:** 해당 월의 절기 배열
+
+### `getSajuMonth(month, day)`
+
+양력 날짜를 사주 월로 변환합니다.
+
+사주에서 월주는 절기(節氣)를 기준으로 계산합니다.
+입춘(立春, 2월 4일경)부터 2월, 경칩(驚蟄, 3월 6일경)부터 3월, ...
+
+**매개변수:**
+- `month`: 양력 월 (1~12)
+- `day`: 양력 일 (1~31)
+
+**반환값:** `number` (1~12)
 
 ## 지원 범위
 

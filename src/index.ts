@@ -42,6 +42,25 @@ export { isSupportedYear, getSupportedRange } from './utils/range';
 export { solarToLunar, lunarToSolar, getGapja } from './core/solar-lunar-converter';
 
 // ============================================
+// Solar Terms (절기)
+// ============================================
+export {
+  getAllSolarTerms,
+  getSolarTermInfoByIndex,
+  getSolarTermInfoByName,
+  getSolarTermsBySajuMonth,
+  getSolarTermsByYear,
+  getSolarTermForDate,
+  getSolarTermsByMonth,
+  getSupportedSolarTermYears,
+  getSajuMonth,
+  isBeforeLichun,
+} from './core/solar-term';
+export { SOLAR_TERM_NAMES } from './data/solar-terms';
+export { SOLAR_TERMS_DATA, SUPPORTED_SOLAR_TERM_YEARS } from './data/solar-terms-data';
+export type { SolarTermWithDate } from './core/solar-term';
+
+// ============================================
 // Data Access (for advanced usage)
 // ============================================
 export { SIXTY_PILLARS, getPillarById, getPillarByHangul } from './data/sixty-pillars';

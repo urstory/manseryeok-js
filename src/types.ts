@@ -84,6 +84,17 @@ export interface SolarTermInfo {
 }
 
 /**
+ * 절기 일시 정보
+ */
+export interface SolarTermDateTime {
+  name: string;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}
+
+/**
  * 양력 → 음력 변환 인덱스 엔트리 (내부용)
  */
 export interface SolarToLunarEntry {
