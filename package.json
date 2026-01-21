@@ -1,0 +1,66 @@
+{
+  "name": "@urstory/manseryeok",
+  "version": "1.0.0",
+  "description": "Korean Lunar Calendar (만세력) JavaScript Library - 1000~2050년 지원, DB 없는 순수 JavaScript 구현",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test",
+    "dump-data": "ts-node scripts/dump-mysql-data.ts",
+    "convert-data": "ts-node scripts/convert-to-js-data.ts"
+  },
+  "keywords": [
+    "korean",
+    "lunar",
+    "calendar",
+    "만세력",
+    "음력",
+    "saju",
+    "사주",
+    "fortune",
+    "운세"
+  ],
+  "author": "urstory",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/urstory/manseryeok-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/urstory/manseryeok-js/issues"
+  },
+  "homepage": "https://github.com/urstory/manseryeok-js#readme",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-typescript": "^11.1.0",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.5.0",
+    "rollup": "^3.20.0",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.0",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
