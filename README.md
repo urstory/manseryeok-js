@@ -33,6 +33,33 @@ Korean Lunar Calendar (만세력) JavaScript Library
 npm install @fullstackfamily/manseryeok
 ```
 
+## 예제 실행
+
+`examples/` 폴더에 다양한 사용 예제가 포함되어 있습니다.
+
+```bash
+# 예제 실행 (빌드 후)
+node examples/01-solar-to-lunar.mjs
+node examples/06-saju-calculation.mjs
+```
+
+### 예제 목록
+
+| 파일 | 설명 |
+|------|------|
+| `01-solar-to-lunar.mjs` | 양력 → 음력 변환 |
+| `02-birthday-info.mjs` | 생일 정보 조회 |
+| `03-lunar-to-solar.mjs` | 음력 → 양력 변환 |
+| `04-leap-month.mjs` | 윤달 처리 |
+| `05-gapja-calculation.mjs` | 60갑자 계산 |
+| `06-saju-calculation.mjs` | 사주팔자 계산 (시간 보정 포함) |
+| `07-calendar-print.mjs` | 달력 출력 |
+| `08-batch-conversion.mjs` | 대량 날짜 변환 |
+| `09-date-validation.mjs` | 날짜 유효성 검사 |
+| `10-sixty-pillars.mjs` | 60갑자 데이터 조회 |
+| `11-solar-terms-info.mjs` | 24절기 정보 조회 |
+| `12-solar-terms-datetime.mjs` | 절기 시각 조회 |
+
 ## 사용법
 
 ### 양력 → 음력 변환 (2026년 설날 예시)
@@ -532,15 +559,15 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 ## 번들 크기
 
-모든 만세력 데이터를 코드에 내장하고 있어 번들 크기가 큽니다:
+비트 패킹 압축으로 1900년~2050년 전체 데이터를 경량화했습니다:
 
 | 포맷 | 크기 |
 |------|------|
-| ESM | ~16 MB |
-| CJS | ~16 MB |
-| Gzip | ~4 MB |
+| ESM | ~290 KB |
+| CJS | ~290 KB |
+| Gzip | ~95 KB |
 
-번들 크기가 큰 이유는 1900년~2050년의 모든 음력 데이터와 60갑자 정보를 포함하고 있기 때문입니다.
+데이터 압축 최적화로 원본 11.4MB → 225KB (98% 감소)를 달성했습니다.
 
 ## 성능
 
