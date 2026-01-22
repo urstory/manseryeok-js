@@ -12,6 +12,8 @@
     "LICENSE"
   ],
   "scripts": {
+    "compress-data": "tsx scripts/compress-date-index.ts",
+    "prebuild": "npm run compress-data",
     "build": "rollup -c",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -43,6 +45,7 @@
   },
   "homepage": "https://github.com/urstory/manseryeok-js#readme",
   "devDependencies": {
+    "@rollup/plugin-alias": "^5.1.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-typescript": "^11.1.0",
     "@types/jest": "^29.5.0",
@@ -52,6 +55,7 @@
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.0",
     "tslib": "^2.5.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0"
   },
   "exports": {

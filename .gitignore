@@ -17,3 +17,6 @@ scripts/*convert*.ts
 
 # Examples with personal data
 birth-examples.js
+
+# Auto-generated compressed data
+src/data/date-index-compressed.ts
