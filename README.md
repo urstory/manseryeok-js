@@ -102,7 +102,8 @@ formatBirthday(1990, 5, 15);
 // === 생일 정보 ===
 // 양력: 1990년 5월 15일
 // 음력: 1990년 4월 21일
-// 갑자: 庚午년 辛巳월 丙辰日
+// 갑자: 庚午년 辛巳월 庚辰日
+
 ```
 
 ### 음력 → 양력 변환 (음력 생일을 양력으로 찾기)
@@ -170,9 +171,9 @@ if (saju.isTimeCorrected) {
 // === 사주팔자 ===
 // 년주: 경오 (庚午)
 // 월주: 신사 (辛巳)
-// 일주: 병진 (丙辰)
-// 시주: 을사 (乙巳)
-// 시간 보정: 14시 -2분 (진태양시)
+// 일주: 경진 (庚辰)
+// 시주: 계미 (癸未)
+// 시간 보정: 13시 58분 (진태양시)
 ```
 
 ### 시간 보정 없이 간단 계산
@@ -184,7 +185,7 @@ import { calculateSajuSimple } from '@fullstackfamily/manseryeok';
 const saju = calculateSajuSimple(1984, 2, 2, 2);
 
 console.log(`사주: ${saju.yearPillar}년 ${saju.monthPillar}월 ${saju.dayPillar}일 ${saju.hourPillar}시`);
-// 사주: 계해년 갑인월 갑인일 축시
+// 사주: 계해년 병인월 병인일 기축시
 ```
 
 ### 시간 보정 및 경도 설정
@@ -283,7 +284,7 @@ function isValidDate(year: number, month: number, day: number): boolean {
   }
 }
 
-console.log(isValidDate(2024, 2, 29));  // false (2024년 2월은 29일까지 있음)
+console.log(isValidDate(2024, 2, 29));  // true (2024년은 윤년, 2월 29일 유효)
 console.log(isValidDate(2023, 2, 29));  // false (2023년은 평년)
 console.log(isValidDate(1800, 1, 1));   // false (지원 범위 밖)
 console.log(isValidDate(2024, 2, 10));  // true
@@ -364,7 +365,7 @@ function printSolarTerms() {
   console.log('계절\t절기\t\t한자\t\t황경\t사주월');
   console.log(''.padEnd(60, '-'));
 
-  const seasons = ['봄', '봄', '봄', '봄', '봔', '봔',
+  const seasons = ['봄', '봄', '봄', '봄', '봄', '봄',
                    '여름', '여름', '여름', '여름', '여름', '여름',
                    '가을', '가을', '가을', '가을', '가을', '가을',
                    '겨울', '겨울', '겨울', '겨울', '겨울', '겨울'];
@@ -436,7 +437,7 @@ console.log('절기 데이터 지원 연도:', supportedYears.join(', '));
 양력을 음력으로 변환합니다.
 
 **매개변수:**
-- `solarYear`: 양력 년 (1000~2050)
+- `solarYear`: 양력 년 (1900~2050)
 - `solarMonth`: 양력 월 (1~12)
 - `solarDay`: 양력 일 (1~31)
 
@@ -451,7 +452,7 @@ console.log('절기 데이터 지원 연도:', supportedYears.join(', '));
 음력을 양력으로 변환합니다.
 
 **매개변수:**
-- `lunarYear`: 음력 년 (1000~2050)
+- `lunarYear`: 음력 년 (1900~2050)
 - `lunarMonth`: 음력 월 (1~12)
 - `lunarDay`: 음력 일 (1~30)
 - `isLeapMonth`: 윤달 여부 (기본값: false)
@@ -489,7 +490,7 @@ console.log('절기 데이터 지원 연도:', supportedYears.join(', '));
 ```ts
 const saju = calculateSaju(1990, 5, 15, 14, 30);
 console.log(saju.yearPillar); // '경오'
-console.log(saju.hourPillar); // '을사'
+console.log(saju.hourPillar); // '계미'
 console.log(saju.isTimeCorrected); // true
 console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 ```
