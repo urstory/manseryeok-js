@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>만세력 - 사주팔자 계산기</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f5f0e8;--bg2:#ece5d8;--fg:#1a1a2e;--fg2:#555;
+  --gold:#c9a227;--gold-light:#e8d48b;--navy:#1a1a2e;--red:#8b2020;
+  --green:#2d8f4e;--fire:#d94040;--earth:#c49a2a;--metal:#7a7a8a;--water:#2a5caa;
+  --card:#fff;--card-border:#ddd;--shadow:0 2px 12px rgba(0,0,0,.08);
+  --radius:12px;--tab-bg:#e8e0d0;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#0f0f1a;--bg2:#1a1a2e;--fg:#e8e0d0;--fg2:#aaa;
+    --card:#1e1e30;--card-border:#333;--shadow:0 2px 12px rgba(0,0,0,.3);
+    --tab-bg:#15152a;
+  }
+}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;min-height:100vh}
+.hanja{font-family:'Noto Serif KR',Georgia,'Times New Roman',serif}
+h1,h2,h3{font-weight:700}
+a{color:var(--gold)}
+
+header{background:var(--navy);color:#fff;text-align:center;padding:2rem 1rem 1rem;position:relative;overflow:hidden}
+header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(201,162,39,.15),transparent 70%)}
+header h1{font-size:1.8rem;position:relative;letter-spacing:.05em}
+header h1 .sub{display:block;font-size:.85rem;color:var(--gold);margin-top:.3rem;font-weight:400;letter-spacing:.2em}
+header p{font-size:.8rem;color:#aab;margin-top:.4rem;position:relative}
+
+.container{max-width:860px;margin:0 auto;padding:0 1rem 2rem}
+
+.tabs{display:flex;background:var(--tab-bg);border-radius:var(--radius) var(--radius) 0 0;overflow-x:auto;margin-top:-2px;position:relative;z-index:1;gap:2px;padding:4px 4px 0}
+.tabs button{flex:1;min-width:0;padding:.65rem .5rem;border:none;background:transparent;color:var(--fg2);font-size:.8rem;font-weight:600;cursor:pointer;border-radius:8px 8px 0 0;white-space:nowrap;transition:all .2s}
+.tabs button:hover{background:var(--bg);color:var(--fg)}
+.tabs button.active{background:var(--card);color:var(--fg);box-shadow:0 -2px 6px rgba(0,0,0,.06)}
+@media(prefers-color-scheme:dark){.tabs button.active{background:var(--card)}}
+
+.tab-content{display:none;animation:fadeIn .3s ease}
+.tab-content.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.panel{background:var(--card);border:1px solid var(--card-border);border-radius:0 0 var(--radius) var(--radius);padding:1.2rem;box-shadow:var(--shadow);margin-bottom:1.2rem}
+
+.card{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:1.2rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.card h3{font-size:1rem;color:var(--navy);border-bottom:2px solid var(--gold);padding-bottom:.4rem;margin-bottom:.8rem}
+@media(prefers-color-scheme:dark){.card h3{color:var(--gold-light)}}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.form-row-3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:500px){.form-grid,.form-row-3{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column;gap:.25rem}
+.form-group label{font-size:.78rem;font-weight:600;color:var(--fg2)}
+.form-group select,.form-group input{padding:.5rem .6rem;border:1px solid var(--card-border);border-radius:8px;font-size:.9rem;background:var(--bg);color:var(--fg);appearance:auto}
+.form-group select:focus,.form-group input:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.form-full{grid-column:1/-1}
+
+.checkbox-row{display:flex;align-items:center;gap:.5rem;grid-column:1/-1;margin-top:.2rem}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold)}
+.checkbox-row label{font-size:.82rem;cursor:pointer}
+
+.btn{display:inline-block;padding:.6rem 1.2rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn:hover{background:#2a2a4e;transform:translateY(-1px)}
+.btn-full{display:block;width:100%;margin-top:.7rem}
+.btn-sm{padding:.4rem .8rem;font-size:.8rem}
+.btn-gold{background:var(--gold);color:var(--navy)}
+.btn-gold:hover{background:var(--gold-light)}
+@media(prefers-color-scheme:dark){.btn{background:var(--gold);color:var(--navy)}.btn:hover{background:var(--gold-light)}}
+
+.error-msg{background:#fff0f0;color:#c33;border:1px solid #fcc;border-radius:8px;padding:.6rem .8rem;margin-top:.6rem;font-size:.82rem;display:none}
+@media(prefers-color-scheme:dark){.error-msg{background:#2a1515;border-color:#533}}
+
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--navy);color:#fff;padding:.7rem 1.5rem;border-radius:8px;font-size:.85rem;font-weight:600;z-index:999;transition:transform .3s ease;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@media(prefers-color-scheme:dark){.toast{background:var(--gold);color:var(--navy)}}
+
+.info-grid{display:grid;grid-template-columns:auto 1fr;gap:.25rem .7rem}
+.info-grid dt{font-weight:600;color:var(--fg2);font-size:.82rem;white-space:nowrap}
+.info-grid dd{font-size:.9rem}
+
+.saju-table{width:100%;border-collapse:separate;border-spacing:5px;margin:0 auto}
+.saju-table th{font-size:.72rem;font-weight:600;color:var(--fg2);padding:.2rem;text-align:center;letter-spacing:.1em}
+.saju-table td{text-align:center;padding:.4rem .2rem;border-radius:8px;font-weight:700;min-width:55px}
+.stem-cell,.branch-cell{font-size:1.3rem}
+.stem-hanja,.branch-hanja{font-size:.8rem;opacity:.7}
+.element-badge{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.68rem;font-weight:700;margin-top:.15rem}
+.yinyang-text{font-size:.72rem;color:var(--fg2)}
+
+.el-wood{background:rgba(45,143,78,.12);color:var(--green)}
+.el-fire{background:rgba(217,64,64,.12);color:var(--fire)}
+.el-earth{background:rgba(196,154,42,.12);color:var(--earth)}
+.el-metal{background:rgba(122,122,138,.12);color:var(--metal)}
+.el-water{background:rgba(42,92,170,.12);color:var(--water)}
+
+.stem-wood,.branch-wood{background:rgba(45,143,78,.08);border:2px solid var(--green)}
+.stem-fire,.branch-fire{background:rgba(217,64,64,.08);border:2px solid var(--fire)}
+.stem-earth,.branch-earth{background:rgba(196,154,42,.08);border:2px solid var(--earth)}
+.stem-metal,.branch-metal{background:rgba(122,122,138,.08);border:2px solid var(--metal)}
+.stem-water,.branch-water{background:rgba(42,92,170,.08);border:2px solid var(--water)}
+
+.oh-chart{display:flex;gap:.4rem;align-items:flex-end;height:80px;margin:.8rem 0}
+.oh-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.15rem}
+.oh-bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height .5s ease;min-height:4px}
+.oh-bar-label{font-size:.68rem;font-weight:700}
+.oh-bar-count{font-size:.78rem;font-weight:700;margin-top:.1rem}
+.oh-missing{color:var(--fire);font-weight:700;font-size:.82rem;margin-top:.4rem}
+
+.fortune-scroll{display:flex;gap:.4rem;overflow-x:auto;padding:.4rem 0;-webkit-overflow-scrolling:touch}
+.fortune-scroll::-webkit-scrollbar{height:4px}
+.fortune-scroll::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px}
+.fortune-item{flex:0 0 auto;text-align:center;padding:.4rem .6rem;border-radius:8px;border:1px solid var(--card-border);min-width:65px;font-size:.78rem;background:var(--bg)}
+.fortune-item .age{font-size:.68rem;color:var(--fg2);margin-bottom:.15rem}
+.fortune-item .pillar{font-size:.95rem;font-weight:700}
+.fortune-item .pillar-hanja{font-size:.72rem;opacity:.7}
+.fortune-item.active{border-color:var(--gold);background:rgba(201,162,39,.08)}
+
+.data-table{width:100%;font-size:.82rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:.35rem .4rem;border-bottom:2px solid var(--card-border);font-size:.72rem;color:var(--fg2);font-weight:700}
+.data-table td{padding:.35rem .4rem;border-bottom:1px solid var(--card-border)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .current{background:rgba(201,162,39,.1);font-weight:700}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-header{text-align:center;font-size:.72rem;font-weight:700;padding:.3rem;color:var(--fg2)}
+.cal-header:first-child{color:var(--fire)}
+.cal-header:last-child{color:var(--water)}
+.cal-cell{text-align:center;padding:.3rem .15rem;border-radius:6px;font-size:.75rem;min-height:52px;border:1px solid transparent;cursor:default}
+.cal-cell:hover{background:var(--bg2)}
+.cal-cell .solar{font-weight:700;font-size:.85rem}
+.cal-cell .lunar{font-size:.6rem;color:var(--fg2)}
+.cal-cell .gapja{font-size:.58rem;color:var(--gold)}
+.cal-cell.today{border-color:var(--gold);background:rgba(201,162,39,.08)}
+.cal-cell.sunday .solar{color:var(--fire)}
+.cal-cell.saturday .solar{color:var(--water)}
+.cal-cell.term{background:rgba(45,143,78,.06)}
+.cal-cell.empty{min-height:0}
+
+.pillars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.4rem}
+.pillar-card{text-align:center;padding:.5rem .3rem;border-radius:8px;border:1px solid var(--card-border);font-size:.78rem;background:var(--bg);transition:transform .2s}
+.pillar-card:hover{transform:scale(1.03)}
+.pillar-card .pid{font-size:.6rem;color:var(--fg2)}
+.pillar-card .phangul{font-size:1.1rem;font-weight:700}
+.pillar-card .phanja{font-size:.8rem;opacity:.7}
+.pillar-card .panimal{font-size:.65rem;color:var(--fg2)}
+
+.correction-info{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.3rem}
+.correction-box{padding:.5rem;border-radius:8px;background:var(--bg);text-align:center}
+.correction-box .label{font-size:.68rem;color:var(--fg2)}
+.correction-box .value{font-size:1rem;font-weight:700;margin-top:.15rem}
+
+.filter-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem}
+.filter-row select{padding:.35rem .5rem;border:1px solid var(--card-border);border-radius:6px;font-size:.8rem;background:var(--bg);color:var(--fg)}
+
+footer{text-align:center;padding:2rem 1rem;color:var(--fg2);font-size:.72rem}
+footer a{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>만세력 사주 계산기
+    <span class="sub hanja">萬歲曆 四柱八字 計算機</span>
+  </h1>
+  <p>1900 ~ 2050 | KASI 데이터 기반 | 클라이언트 계산</p>
+</header>
+
+<div class="container">
+  <div class="tabs" id="mainTabs">
+    <button class="active" data-tab="saju">사주팔자</button>
+    <button data-tab="convert">음양력 변환</button>
+    <button data-tab="calendar">달력</button>
+    <button data-tab="pillars">60갑자</button>
+    <button data-tab="terms">24절기</button>
+  </div>
+
+  <!-- TAB 1: 사주팔자 -->
+  <div class="tab-content active" id="tab-saju">
+    <div class="panel">
+      <div class="card">
+        <h3>생년월일시 입력</h3>
+        <div class="form-grid form-row-3">
+          <div class="form-group"><label>년 (年)</label><input type="number" id="sj-year" min="1900" max="2050" placeholder="1990"></div>
+          <div class="form-group"><label>월 (月)</label>
+            <select id="sj-month"><option value="">선택</option>
+            <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+            <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+            <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+            <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+            </select>
+          </div>
+          <div class="form-group"><label>일 (日)</label><input type="number" id="sj-day" min="1" max="31" placeholder="15"></div>
+        </div>
+        <div class="form-grid" style="margin-top:.6rem">
+          <div class="form-group"><label>시 (時) - 선택</label>
+            <select id="sj-hour"><option value="">미입력</option>
+            <option value="0">0시 (자시초)</option><option value="1">1시 (축시)</option>
+            <option value="2">2시 (축시)</option><option value="3">3시 (인시)</option>
+            <option value="4">4시 (인시)</option><option value="5">5시 (묘시)</option>
+            <option value="6">6시 (묘시)</option><option value="7">7시 (진시)</option>
+            <option value="8">8시 (진시)</option><option value="9">9시 (사시)</option>
+            <option value="10">10시 (사시)</option><option value="11">11시 (오시)</option>
+            <option value="12">12시 (오시)</option><option value="13">13시 (미시)</option>
+            <option value="14">14시 (미시)</option><option value="15">15시 (신시)</option>
+            <option value="16">16시 (신시)</option><option value="17">17시 (유시)</option>
+            <option value="18">18시 (유시)</option><option value="19">19시 (술시)</option>
+            <option value="20">20시 (술시)</option><option value="21">21시 (해시)</option>
+            <option value="22">22시 (해시)</option><option value="23">23시 (자시야)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>분 (分)</label><input type="number" id="sj-minute" min="0" max="59" placeholder="0" value="0"></div>
+        </div>
+        <div class="form-grid" style="margin-top:.6rem">
+          <div class="form-group"><label>성별</label>
+            <select id="sj-gender"><option value="m">남 (男)</option><option value="f">여 (女)</option></select>
+          </div>
+          <div class="form-group"><label>출생 지역</label>
+            <select id="sj-city">
+              <option value="127">서울 (127.0&deg;)</option>
+              <option value="129">부산 (129.0&deg;)</option>
+              <option value="128.6">대구 (128.6&deg;)</option>
+              <option value="126.7">인천 (126.7&deg;)</option>
+              <option value="126.9">광주 (126.9&deg;)</option>
+              <option value="127.4">대전 (127.4&deg;)</option>
+              <option value="129.3">울산 (129.3&deg;)</option>
+              <option value="127">세종 (127.0&deg;)</option>
+              <option value="126.5">제주 (126.5&deg;)</option>
+            </select>
+          </div>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="sj-tc" checked>
+          <label for="sj-tc">시간 보정 (진태양시 True Solar Time)</label>
+        </div>
+        <button class="btn btn-full" onclick="calcSaju()">계산하기</button>
+        <div class="error-msg" id="sj-error"></div>
+      </div>
+
+      <div id="sj-results" style="display:none">
+        <div style="text-align:right;margin-bottom:.5rem">
+          <button class="btn btn-sm btn-gold" onclick="copyMarkdown()">마크다운 복사</button>
+        </div>
+        <div class="card"><h3>기본 정보</h3><dl class="info-grid" id="sj-basic"></dl></div>
+        <div class="card"><h3>사주팔자 (四柱八字)</h3><table class="saju-table" id="sj-table"></table></div>
+        <div class="card"><h3>오행 분석 (五行)</h3><div id="sj-oh"></div></div>
+        <div class="card" id="sj-corr-card" style="display:none"><h3>시간 보정 정보</h3><div id="sj-corr"></div></div>
+        <div class="card"><h3>대운 (大運)</h3><p style="font-size:.78rem;color:var(--fg2);margin-bottom:.4rem" id="sj-fortune-dir"></p><div class="fortune-scroll" id="sj-major"></div></div>
+        <div class="card"><h3>세운 (歲運)</h3><table class="data-table" id="sj-yearly"></table></div>
+        <div class="card"><h3>절기 정보 (節氣)</h3><div id="sj-terms"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: 음양력 변환 -->
+  <div class="tab-content" id="tab-convert">
+    <div class="panel">
+      <div class="card">
+        <h3>양력 &rarr; 음력 변환</h3>
+        <div class="form-grid form-row-3">
+          <div class="form-group"><label>년</label><input type="number" id="cv-sy" min="1900" max="2050" placeholder="2024"></div>
+          <div class="form-group"><label>월</label><input type="number" id="cv-sm" min="1" max="12" placeholder="2"></div>
+          <div class="form-group"><label>일</label><input type="number" id="cv-sd" min="1" max="31" placeholder="10"></div>
+        </div>
+        <button class="btn btn-full" onclick="convStoL()">변환</button>
+        <div class="error-msg" id="cv-s-err"></div>
+        <div id="cv-s-result" style="margin-top:.7rem"></div>
+      </div>
+      <div class="card">
+        <h3>음력 &rarr; 양력 변환</h3>
+        <div class="form-grid form-row-3">
+          <div class="form-group"><label>년</label><input type="number" id="cv-ly" min="1900" max="2050" placeholder="2024"></div>
+          <div class="form-group"><label>월</label><input type="number" id="cv-lm" min="1" max="12" placeholder="1"></div>
+          <div class="form-group"><label>일</label><input type="number" id="cv-ld" min="1" max="30" placeholder="1"></div>
+        </div>
+        <div class="checkbox-row"><input type="checkbox" id="cv-leap"><label for="cv-leap">윤달</label></div>
+        <button class="btn btn-full" onclick="convLtoS()">변환</button>
+        <div class="error-msg" id="cv-l-err"></div>
+        <div id="cv-l-result" style="margin-top:.7rem"></div>
+      </div>
+      <div class="card">
+        <h3>갑자 조회</h3>
+        <div class="form-grid form-row-3">
+          <div class="form-group"><label>년</label><input type="number" id="cv-gy" min="1900" max="2050" placeholder="1984"></div>
+          <div class="form-group"><label>월</label><input type="number" id="cv-gm" min="1" max="12" placeholder="2"></div>
+          <div class="form-group"><label>일</label><input type="number" id="cv-gd" min="1" max="31" placeholder="2"></div>
+        </div>
+        <button class="btn btn-full" onclick="lookupGapja()">조회</button>
+        <div class="error-msg" id="cv-g-err"></div>
+        <div id="cv-g-result" style="margin-top:.7rem"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: 달력 -->
+  <div class="tab-content" id="tab-calendar">
+    <div class="panel">
+      <div class="card">
+        <h3>양력/음력 달력</h3>
+        <div class="form-grid" style="max-width:300px;margin-bottom:.8rem">
+          <div class="form-group"><label>년</label><input type="number" id="cal-year" min="1900" max="2050"></div>
+          <div class="form-group"><label>월</label><select id="cal-month">
+            <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+            <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+            <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+            <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+          </select></div>
+        </div>
+        <div style="display:flex;gap:.5rem;margin-bottom:.8rem">
+          <button class="btn btn-sm" onclick="calNav(-1)">&larr; 이전</button>
+          <button class="btn btn-sm" onclick="calNav(0)">오늘</button>
+          <button class="btn btn-sm" onclick="calNav(1)">다음 &rarr;</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: 60갑자 -->
+  <div class="tab-content" id="tab-pillars">
+    <div class="panel">
+      <div class="card">
+        <h3>60갑자 (六十甲子) 표</h3>
+        <div class="filter-row">
+          <select id="pl-filter-el" onchange="renderPillars()">
+            <option value="">오행 전체</option>
+            <option value="목">목 (木)</option><option value="화">화 (火)</option>
+            <option value="토">토 (土)</option><option value="금">금 (金)</option><option value="수">수 (水)</option>
+          </select>
+          <select id="pl-filter-animal" onchange="renderPillars()">
+            <option value="">띠 전체</option>
+            <option value="쥐">쥐</option><option value="소">소</option>
+            <option value="호랑이">호랑이</option><option value="토끼">토끼</option>
+            <option value="용">용</option><option value="뱀">뱀</option>
+            <option value="말">말</option><option value="양">양</option>
+            <option value="원숭이">원숭이</option><option value="닭">닭</option>
+            <option value="개">개</option><option value="돼지">돼지</option>
+          </select>
+        </div>
+        <div class="pillars-grid" id="pl-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: 24절기 -->
+  <div class="tab-content" id="tab-terms">
+    <div class="panel">
+      <div class="card">
+        <h3>24절기 기본 정보</h3>
+        <div style="overflow-x:auto"><table class="data-table" id="tm-base"></table></div>
+      </div>
+      <div class="card">
+        <h3>절기 시각 조회 (2020~2030)</h3>
+        <div class="form-grid" style="max-width:200px;margin-bottom:.7rem">
+          <div class="form-group"><label>년도</label>
+            <select id="tm-year" onchange="renderTermYear()">
+              <option value="2020">2020</option><option value="2021">2021</option><option value="2022">2022</option>
+              <option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option>
+              <option value="2026" selected>2026</option><option value="2027">2027</option><option value="2028">2028</option>
+              <option value="2029">2029</option><option value="2030">2030</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto"><table class="data-table" id="tm-year-table"></table></div>
+      </div>
+      <div class="card">
+        <h3>사주 월 계산기</h3>
+        <div class="form-grid" style="max-width:300px">
+          <div class="form-group"><label>월</label><input type="number" id="tm-sm" min="1" max="12" placeholder="2"></div>
+          <div class="form-group"><label>일</label><input type="number" id="tm-sd" min="1" max="31" placeholder="4"></div>
+        </div>
+        <button class="btn btn-full" style="max-width:300px" onclick="calcSajuMonth()">계산</button>
+        <div id="tm-sm-result" style="margin-top:.7rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">복사되었습니다!</div>
+
+<footer>
+  <p>manseryeok-js &copy; <a href="https://github.com/urstory/manseryeok-js" target="_blank">urstory</a> | MIT License</p>
+  <p style="margin-top:.2rem">KASI 데이터 기반 | 1900~2050</p>
+</footer>
+
+<script src="manseryeok.js"></script>
+<script>
+var M = window.manseryeok;
+
+var STEMS=['갑','을','병','정','무','기','경','신','임','계'];
+var STEMS_H=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+var BRANCHES=['자','축','인','묘','진','사','오','미','신','유','술','해'];
+var BRANCHES_H=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+var ANIMALS=['쥐','소','호랑이','토끼','용','뱀','말','양','원숭이','닭','개','돼지'];
+var EL_NAMES=['목','화','토','금','수'];
+var EL_HANJA={목:'木',화:'火',토:'土',금:'金',수:'水'};
+var EL_MAP={목:'wood',화:'fire',토:'earth',금:'metal',수:'water'};
+var EL_COLORS={wood:'#2d8f4e',fire:'#d94040',earth:'#c49a2a',metal:'#7a7a8a',water:'#2a5caa'};
+var STEM_EL=['목','목','화','화','토','토','금','금','수','수'];
+var BRANCH_EL=['수','토','목','목','토','화','화','토','금','금','토','수'];
+var MONTH_NAMES=['','인월(寅)','묘월(卯)','진월(辰)','사월(巳)','오월(午)','미월(未)','신월(申)','유월(酉)','술월(戌)','해월(亥)','자월(子)','축월(丑)'];
+
+function si(ch){return STEMS.indexOf(ch)}
+function bi(ch){return BRANCHES.indexOf(ch)}
+function elCls(el){return 'el-'+(EL_MAP[el]||'earth')}
+function cellCls(el){return EL_MAP[el]||'earth'}
+
+// ===== TABS =====
+document.querySelectorAll('.tabs button').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.tabs button').forEach(function(b){b.classList.remove('active')});
+    document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active')});
+    this.classList.add('active');
+    document.getElementById('tab-'+this.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== TOAST =====
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg||'복사되었습니다!';
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show')},2000);
+}
+
+// ===== ERROR =====
+function showErr(id,msg){var e=document.getElementById(id);e.textContent=msg;e.style.display='block'}
+function hideErr(id){document.getElementById(id).style.display='none'}
+
+// ===== TAB 1: SAJU =====
+var lastSaju=null, lastInput=null;
+
+function calcSaju(){
+  hideErr('sj-error');
+  var y=parseInt(document.getElementById('sj-year').value);
+  var m=parseInt(document.getElementById('sj-month').value);
+  var d=parseInt(document.getElementById('sj-day').value);
+  var hv=document.getElementById('sj-hour').value;
+  var min=parseInt(document.getElementById('sj-minute').value)||0;
+  var gender=document.getElementById('sj-gender').value;
+  var lng=parseFloat(document.getElementById('sj-city').value);
+  var tc=document.getElementById('sj-tc').checked;
+
+  if(!y||y<1900||y>2050)return showErr('sj-error','년도는 1900~2050 사이 값을 입력하세요.');
+  if(!m)return showErr('sj-error','월을 선택하세요.');
+  if(!d||d<1||d>31)return showErr('sj-error','일을 올바르게 입력하세요.');
+
+  try{
+    var hasH=hv!=='';
+    var h=hasH?parseInt(hv):undefined;
+    var saju=M.calculateSaju(y,m,d,h,min,{longitude:lng,applyTimeCorrection:tc&&hasH});
+    var lunar=M.solarToLunar(y,m,d);
+
+    lastSaju=saju;
+    lastInput={y:y,m:m,d:d,h:hasH?parseInt(hv):null,min:min,gender:gender,lng:lng,hasH:hasH,lunar:lunar};
+
+    renderBasic(y,m,d,hasH?parseInt(hv):null,min,lunar,saju,gender);
+    renderSajuTable(saju,hasH);
+    renderOh(saju,hasH);
+    renderCorr(saju,y,m,d,parseInt(hv),min,lng);
+    renderMajor(saju,gender,y);
+    renderYearly(y,saju);
+    renderSajuTerms(y,m,d);
+
+    var r=document.getElementById('sj-results');
+    r.style.display='block';
+    r.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    if(e instanceof M.OutOfRangeError)showErr('sj-error','지원 범위(1900~2050)를 벗어났습니다.');
+    else if(e instanceof M.InvalidDateError)showErr('sj-error','유효하지 않은 날짜입니다.');
+    else showErr('sj-error','오류: '+e.message);
+  }
+}
+
+function renderBasic(y,m,d,h,min,lunar,saju,gender){
+  var yb=saju.yearPillar.charAt(1);
+  var idx=bi(yb);
+  var animal=idx>=0?ANIMALS[idx]:'';
+  var dsi_=si(saju.dayPillar.charAt(0));
+  var del=STEM_EL[dsi_];
+  document.getElementById('sj-basic').innerHTML=
+    '<dt>양력</dt><dd>'+y+'년 '+m+'월 '+d+'일'+(h!=null?' '+h+'시 '+min+'분':'')+'</dd>'+
+    '<dt>음력</dt><dd>'+lunar.lunar.year+'년 '+lunar.lunar.month+'월 '+lunar.lunar.day+'일'+(lunar.lunar.isLeapMonth?' (윤달)':'')+'</dd>'+
+    '<dt>띠</dt><dd>'+animal+' ('+yb+'/'+(idx>=0?BRANCHES_H[idx]:'')+')</dd>'+
+    '<dt>성별</dt><dd>'+(gender==='m'?'남 (男)':'여 (女)')+'</dd>'+
+    '<dt>일간 (나)</dt><dd><strong>'+saju.dayPillar.charAt(0)+' ('+saju.dayPillarHanja.charAt(0)+') - '+del+'('+EL_HANJA[del]+')</strong></dd>';
+}
+
+function renderSajuTable(saju,hasH){
+  var ps=[
+    {l:'시주(時)',h:saju.hourPillar,hj:saju.hourPillarHanja,ok:hasH},
+    {l:'일주(日)',h:saju.dayPillar,hj:saju.dayPillarHanja,ok:true},
+    {l:'월주(月)',h:saju.monthPillar,hj:saju.monthPillarHanja,ok:true},
+    {l:'년주(年)',h:saju.yearPillar,hj:saju.yearPillarHanja,ok:true}
+  ];
+  var head='<tr>';
+  ps.forEach(function(p){head+='<th>'+p.l+'</th>'});
+  head+='</tr>';
+
+  var stemR='<tr>';
+  ps.forEach(function(p){
+    if(!p.ok||!p.h){stemR+='<td style="opacity:.4">-</td>';return}
+    var c=p.h.charAt(0),s=si(c),el=STEM_EL[s];
+    stemR+='<td class="stem-'+cellCls(el)+'"><div class="stem-cell">'+c+'</div><div class="stem-hanja hanja">'+p.hj.charAt(0)+'</div><div class="element-badge '+elCls(el)+'">'+el+'('+EL_HANJA[el]+')</div><div class="yinyang-text">'+(s%2===0?'양':'음')+'</div></td>';
+  });
+  stemR+='</tr>';
+
+  var brR='<tr>';
+  ps.forEach(function(p){
+    if(!p.ok||!p.h){brR+='<td style="opacity:.4">-</td>';return}
+    var c=p.h.charAt(1),b=bi(c),el=BRANCH_EL[b];
+    brR+='<td class="branch-'+cellCls(el)+'"><div class="branch-cell">'+c+'</div><div class="branch-hanja hanja">'+p.hj.charAt(1)+'</div><div class="element-badge '+elCls(el)+'">'+el+'('+EL_HANJA[el]+')</div><div class="yinyang-text">'+(b>=0?ANIMALS[b]:'')+'</div></td>';
+  });
+  brR+='</tr>';
+  document.getElementById('sj-table').innerHTML=head+stemR+brR;
+}
+
+function renderOh(saju,hasH){
+  var cnt={목:0,화:0,토:0,금:0,수:0};
+  function add(p){if(!p)return;var s=si(p.charAt(0)),b=bi(p.charAt(1));if(s>=0)cnt[STEM_EL[s]]++;if(b>=0)cnt[BRANCH_EL[b]]++}
+  add(saju.yearPillar);add(saju.monthPillar);add(saju.dayPillar);
+  if(hasH)add(saju.hourPillar);
+  var mx=Math.max(cnt['목'],cnt['화'],cnt['토'],cnt['금'],cnt['수'],1);
+  var html='<div class="oh-chart">';
+  EL_NAMES.forEach(function(el){
+    var pct=Math.round(cnt[el]/mx*100);
+    html+='<div class="oh-bar"><div class="oh-bar-count" style="color:'+EL_COLORS[EL_MAP[el]]+'">'+cnt[el]+'</div><div class="oh-bar-fill" style="height:'+Math.max(pct,5)+'%;background:'+EL_COLORS[EL_MAP[el]]+'"></div><div class="oh-bar-label">'+el+'('+EL_HANJA[el]+')</div></div>';
+  });
+  html+='</div>';
+  var miss=EL_NAMES.filter(function(e){return cnt[e]===0});
+  if(miss.length)html+='<div class="oh-missing">없는 오행: '+miss.join(', ')+(hasH?'':' (시주 미입력)')+'</div>';
+  document.getElementById('sj-oh').innerHTML=html;
+}
+
+function renderCorr(saju,y,m,d,h,min,lng){
+  var card=document.getElementById('sj-corr-card');
+  if(!saju.isTimeCorrected){card.style.display='none';return}
+  card.style.display='block';
+  document.getElementById('sj-corr').innerHTML=
+    '<div class="correction-info">'+
+    '<div class="correction-box"><div class="label">입력 시간</div><div class="value">'+h+'시 '+min+'분</div></div>'+
+    '<div class="correction-box"><div class="label">보정 시간 (진태양시)</div><div class="value">'+saju.correctedTime.hour+'시 '+saju.correctedTime.minute+'분</div></div>'+
+    '</div>'+
+    '<p style="font-size:.78rem;color:var(--fg2);margin-top:.5rem;text-align:center">경도 '+lng+'&deg; / 표준 자오선 135&deg; / 차이 '+Math.abs(135-lng).toFixed(1)+'&deg; / 보정 '+Math.abs(Math.round((135-lng)*4))+'분</p>';
+}
+
+function renderMajor(saju,gender,birthYear){
+  var ysi_=si(saju.yearPillar.charAt(0));
+  var isYang=ysi_%2===0;
+  var isMale=gender==='m';
+  var fwd=(isMale&&isYang)||(!isMale&&!isYang);
+  document.getElementById('sj-fortune-dir').textContent=(isMale?'남':'여')+'명 + '+(isYang?'양':'음')+'년간 = '+(fwd?'순행(順行)':'역행(逆行)');
+
+  var mp=M.getPillarByHangul(saju.monthPillar);
+  if(!mp){document.getElementById('sj-major').innerHTML='<p>월주 정보 없음</p>';return}
+
+  var html='';
+  var curY=new Date().getFullYear(), curAge=curY-birthYear+1;
+  for(var i=1;i<=10;i++){
+    var pid=fwd?(mp.id+i)%60:((mp.id-i)%60+60)%60;
+    var p=M.getPillarById(pid);
+    var sa=i*10-9,ea=i*10;
+    var act=curAge>=sa&&curAge<=ea;
+    html+='<div class="fortune-item'+(act?' active':'')+'"><div class="age">'+sa+'~'+ea+'세</div><div class="pillar" style="color:'+EL_COLORS[EL_MAP[p.element]]+'">'+p.combined.hangul+'</div><div class="pillar-hanja hanja">'+p.combined.hanja+'</div><div class="element-badge '+elCls(p.element)+'" style="margin-top:.2rem">'+p.element+'</div></div>';
+  }
+  document.getElementById('sj-major').innerHTML=html;
+}
+
+function renderYearly(birthYear,saju){
+  var curY=new Date().getFullYear();
+  var html='<thead><tr><th>년도</th><th>나이</th><th>세운</th><th>오행</th></tr></thead><tbody>';
+  for(var yr=curY-3;yr<=curY+9;yr++){
+    if(yr<1900||yr>2050)continue;
+    try{
+      var r=M.solarToLunar(yr,6,15);
+      var age=yr-birthYear+1;
+      var yel=STEM_EL[si(r.gapja.yearPillar.charAt(0))];
+      html+='<tr class="'+(yr===curY?'current':'')+'"><td>'+yr+'</td><td>'+(age>0?age+'세':'-')+'</td><td>'+r.gapja.yearPillar+' <span class="hanja" style="opacity:.6">('+r.gapja.yearPillarHanja+')</span></td><td><span class="element-badge '+elCls(yel)+'">'+yel+'</span></td></tr>';
+    }catch(e){}
+  }
+  html+='</tbody>';
+  document.getElementById('sj-yearly').innerHTML=html;
+}
+
+function renderSajuTerms(y,m,d){
+  var html='';
+  var sm=M.getSajuMonth(m,d);
+  html+='<p style="margin-bottom:.5rem">사주 월: <strong>'+sm+'월 - '+(MONTH_NAMES[sm]||'')+'</strong></p>';
+  var bLichun=M.isBeforeLichun(m,d);
+  html+='<p style="margin-bottom:.5rem;font-size:.82rem">입춘 이전 여부: <strong>'+(bLichun?'예 (전년도 년주 적용)':'아니오')+'</strong></p>';
+  try{
+    var terms=M.getSolarTermsByYear(y);
+    if(terms&&terms.length){
+      html+='<table class="data-table"><thead><tr><th>절기</th><th>한자</th><th>날짜/시각</th><th>사주월</th></tr></thead><tbody>';
+      terms.forEach(function(t){
+        var near=t.month===m&&Math.abs(t.day-d)<=3;
+        html+='<tr style="'+(near?'background:rgba(201,162,39,.1);font-weight:700':'')+'"><td>'+t.name+'</td><td class="hanja">'+t.nameHanja+'</td><td>'+t.month+'/'+t.day+' '+t.hour+':'+String(t.minute).padStart(2,'0')+'</td><td>'+t.sajuMonth+'월</td></tr>';
+      });
+      html+='</tbody></table>';
+    }else{
+      html+='<p style="font-size:.82rem;color:var(--fg2)">'+y+'년 절기 시각은 2020~2030만 지원됩니다.</p>';
+    }
+  }catch(e){
+    html+='<p style="font-size:.82rem;color:var(--fg2)">'+y+'년 절기 시각은 2020~2030만 지원됩니다.</p>';
+  }
+  document.getElementById('sj-terms').innerHTML=html;
+}
+
+// ===== MARKDOWN COPY =====
+function copyMarkdown(){
+  if(!lastSaju||!lastInput)return;
+  var s=lastSaju, inp=lastInput;
+  var yb=s.yearPillar.charAt(1), idx=bi(yb);
+  var animal=idx>=0?ANIMALS[idx]:'';
+  var dsi_=si(s.dayPillar.charAt(0)), del=STEM_EL[dsi_];
+
+  var cnt={목:0,화:0,토:0,금:0,수:0};
+  function addC(p){if(!p)return;var a=si(p.charAt(0)),b=bi(p.charAt(1));if(a>=0)cnt[STEM_EL[a]]++;if(b>=0)cnt[BRANCH_EL[b]]++}
+  addC(s.yearPillar);addC(s.monthPillar);addC(s.dayPillar);
+  if(inp.hasH)addC(s.hourPillar);
+  var miss=EL_NAMES.filter(function(e){return cnt[e]===0});
+
+  var ysi_=si(s.yearPillar.charAt(0));
+  var isYang=ysi_%2===0, isMale=inp.gender==='m';
+  var fwd=(isMale&&isYang)||(!isMale&&!isYang);
+  var mp=M.getPillarByHangul(s.monthPillar);
+  var majorStr='';
+  if(mp){
+    for(var i=1;i<=10;i++){
+      var pid=fwd?(mp.id+i)%60:((mp.id-i)%60+60)%60;
+      var p=M.getPillarById(pid);
+      majorStr+='- '+((i*10-9))+'~'+(i*10)+'세: '+p.combined.hangul+'('+p.combined.hanja+') - '+p.element+'\n';
+    }
+  }
+
+  var curY=new Date().getFullYear();
+  var yearlyStr='';
+  for(var yr=curY-2;yr<=curY+5;yr++){
+    if(yr<1900||yr>2050)continue;
+    try{
+      var r=M.solarToLunar(yr,6,15);
+      var age=yr-inp.y+1;
+      yearlyStr+='- '+yr+'년 ('+(age>0?age+'세':'-')+'): '+r.gapja.yearPillar+'('+r.gapja.yearPillarHanja+') - '+STEM_EL[si(r.gapja.yearPillar.charAt(0))]+'\n';
+    }catch(e){}
+  }
+
+  var sm=M.getSajuMonth(inp.m,inp.d);
+
+  function stemBrStr(pillar,hanja){
+    if(!pillar)return '-';
+    return pillar.charAt(0)+'('+hanja.charAt(0)+')/'+STEM_EL[si(pillar.charAt(0))];
+  }
+  function brStr(pillar,hanja){
+    if(!pillar)return '-';
+    return pillar.charAt(1)+'('+hanja.charAt(1)+')/'+BRANCH_EL[bi(pillar.charAt(1))];
+  }
+
+  var md='# 사주팔자 분석 결과\n\n';
+  md+='## 기본 정보\n';
+  md+='- 양력: '+inp.y+'년 '+inp.m+'월 '+inp.d+'일'+(inp.h!=null?' '+inp.h+'시 '+inp.min+'분':'')+'\n';
+  md+='- 음력: '+inp.lunar.lunar.year+'년 '+inp.lunar.lunar.month+'월 '+inp.lunar.lunar.day+'일'+(inp.lunar.lunar.isLeapMonth?' (윤달)':'')+'\n';
+  md+='- 성별: '+(inp.gender==='m'?'남':'여')+'\n';
+  md+='- 띠: '+animal+' ('+yb+'/'+(idx>=0?BRANCHES_H[idx]:'')+')\n';
+  md+='- 일간(나): '+s.dayPillar.charAt(0)+'('+s.dayPillarHanja.charAt(0)+') - '+del+'('+EL_HANJA[del]+')\n\n';
+
+  md+='## 사주팔자\n';
+  md+='| | 시주 | 일주 | 월주 | 년주 |\n';
+  md+='|---|---|---|---|---|\n';
+  md+='| 천간 | '+(inp.hasH?stemBrStr(s.hourPillar,s.hourPillarHanja):'-')+' | '+stemBrStr(s.dayPillar,s.dayPillarHanja)+' | '+stemBrStr(s.monthPillar,s.monthPillarHanja)+' | '+stemBrStr(s.yearPillar,s.yearPillarHanja)+' |\n';
+  md+='| 지지 | '+(inp.hasH?brStr(s.hourPillar,s.hourPillarHanja):'-')+' | '+brStr(s.dayPillar,s.dayPillarHanja)+' | '+brStr(s.monthPillar,s.monthPillarHanja)+' | '+brStr(s.yearPillar,s.yearPillarHanja)+' |\n\n';
+
+  md+='## 오행 분석\n';
+  EL_NAMES.forEach(function(el){md+='- '+el+'('+EL_HANJA[el]+'): '+cnt[el]+'\n'});
+  if(miss.length)md+='- **없는 오행: '+miss.join(', ')+'**\n';
+  md+='\n';
+
+  if(s.isTimeCorrected&&s.correctedTime){
+    md+='## 시간 보정\n';
+    md+='- 입력: '+inp.h+'시 '+inp.min+'분\n';
+    md+='- 보정(진태양시): '+s.correctedTime.hour+'시 '+s.correctedTime.minute+'분\n';
+    md+='- 경도: '+inp.lng+'\n\n';
+  }
+
+  md+='## 대운 ('+(fwd?'순행':'역행')+')\n';
+  md+=majorStr+'\n';
+  md+='## 세운\n';
+  md+=yearlyStr+'\n';
+  md+='## 절기\n';
+  md+='- 사주 월: '+sm+'월 ('+(MONTH_NAMES[sm]||'')+')\n';
+  md+='- 입춘 이전: '+(M.isBeforeLichun(inp.m,inp.d)?'예':'아니오')+'\n';
+
+  navigator.clipboard.writeText(md).then(function(){showToast('마크다운이 복사되었습니다!')}).catch(function(){showToast('복사 실패')});
+}
+
+// ===== TAB 2: CONVERT =====
+function convStoL(){
+  hideErr('cv-s-err');
+  var y=parseInt(document.getElementById('cv-sy').value),m=parseInt(document.getElementById('cv-sm').value),d=parseInt(document.getElementById('cv-sd').value);
+  if(!y||!m||!d)return showErr('cv-s-err','년월일을 입력하세요.');
+  try{
+    var r=M.solarToLunar(y,m,d);
+    document.getElementById('cv-s-result').innerHTML=
+      '<dl class="info-grid">'+
+      '<dt>음력</dt><dd>'+r.lunar.year+'년 '+r.lunar.month+'월 '+r.lunar.day+'일'+(r.lunar.isLeapMonth?' (윤달)':'')+'</dd>'+
+      '<dt>갑자 (년)</dt><dd>'+r.gapja.yearPillar+' <span class="hanja">('+r.gapja.yearPillarHanja+')</span></dd>'+
+      '<dt>갑자 (월)</dt><dd>'+r.gapja.monthPillar+' <span class="hanja">('+r.gapja.monthPillarHanja+')</span></dd>'+
+      '<dt>갑자 (일)</dt><dd>'+r.gapja.dayPillar+' <span class="hanja">('+r.gapja.dayPillarHanja+')</span></dd>'+
+      '<dt>율리우스일</dt><dd>'+r.julianDay+'</dd>'+
+      '</dl>';
+  }catch(e){showErr('cv-s-err',e.message)}
+}
+
+function convLtoS(){
+  hideErr('cv-l-err');
+  var y=parseInt(document.getElementById('cv-ly').value),m=parseInt(document.getElementById('cv-lm').value),d=parseInt(document.getElementById('cv-ld').value);
+  var leap=document.getElementById('cv-leap').checked;
+  if(!y||!m||!d)return showErr('cv-l-err','년월일을 입력하세요.');
+  try{
+    var r=M.lunarToSolar(y,m,d,leap);
+    document.getElementById('cv-l-result').innerHTML=
+      '<dl class="info-grid">'+
+      '<dt>양력</dt><dd>'+r.solar.year+'년 '+r.solar.month+'월 '+r.solar.day+'일</dd>'+
+      '<dt>갑자 (년)</dt><dd>'+r.gapja.yearPillar+' <span class="hanja">('+r.gapja.yearPillarHanja+')</span></dd>'+
+      '<dt>갑자 (월)</dt><dd>'+r.gapja.monthPillar+' <span class="hanja">('+r.gapja.monthPillarHanja+')</span></dd>'+
+      '<dt>갑자 (일)</dt><dd>'+r.gapja.dayPillar+' <span class="hanja">('+r.gapja.dayPillarHanja+')</span></dd>'+
+      '</dl>';
+  }catch(e){showErr('cv-l-err',e.message)}
+}
+
+function lookupGapja(){
+  hideErr('cv-g-err');
+  var y=parseInt(document.getElementById('cv-gy').value),m=parseInt(document.getElementById('cv-gm').value),d=parseInt(document.getElementById('cv-gd').value);
+  if(!y||!m||!d)return showErr('cv-g-err','년월일을 입력하세요.');
+  try{
+    var g=M.getGapja(y,m,d);
+    document.getElementById('cv-g-result').innerHTML=
+      '<dl class="info-grid">'+
+      '<dt>년주</dt><dd><strong>'+g.yearPillar+'</strong> <span class="hanja">('+g.yearPillarHanja+')</span> - '+STEM_EL[si(g.yearPillar.charAt(0))]+'</dd>'+
+      '<dt>월주</dt><dd><strong>'+g.monthPillar+'</strong> <span class="hanja">('+g.monthPillarHanja+')</span> - '+STEM_EL[si(g.monthPillar.charAt(0))]+'</dd>'+
+      '<dt>일주</dt><dd><strong>'+g.dayPillar+'</strong> <span class="hanja">('+g.dayPillarHanja+')</span> - '+STEM_EL[si(g.dayPillar.charAt(0))]+'</dd>'+
+      '</dl>';
+  }catch(e){showErr('cv-g-err',e.message)}
+}
+
+// ===== TAB 3: CALENDAR =====
+function initCal(){
+  var now=new Date();
+  document.getElementById('cal-year').value=now.getFullYear();
+  document.getElementById('cal-month').value=now.getMonth()+1;
+  renderCal();
+}
+
+function calNav(dir){
+  if(dir===0){
+    var now=new Date();
+    document.getElementById('cal-year').value=now.getFullYear();
+    document.getElementById('cal-month').value=now.getMonth()+1;
+  }else{
+    var y=parseInt(document.getElementById('cal-year').value),m=parseInt(document.getElementById('cal-month').value);
+    m+=dir;
+    if(m>12){m=1;y++}
+    if(m<1){m=12;y--}
+    if(y<1900)y=1900;if(y>2050)y=2050;
+    document.getElementById('cal-year').value=y;
+    document.getElementById('cal-month').value=m;
+  }
+  renderCal();
+}
+
+function renderCal(){
+  var y=parseInt(document.getElementById('cal-year').value),m=parseInt(document.getElementById('cal-month').value);
+  var firstDay=new Date(y,m-1,1).getDay();
+  var daysInMonth=new Date(y,m,0).getDate();
+  var today=new Date();
+  var termDays={};
+  try{
+    var ts=M.getSolarTermsByMonth(y,m);
+    ts.forEach(function(t){termDays[t.day]=t.name});
+  }catch(e){}
+
+  var html='';
+  ['일','월','화','수','목','금','토'].forEach(function(d){
+    html+='<div class="cal-header">'+d+'</div>';
+  });
+  for(var i=0;i<firstDay;i++)html+='<div class="cal-cell empty"></div>';
+
+  for(var d=1;d<=daysInMonth;d++){
+    var dow=(firstDay+d-1)%7;
+    var cls='cal-cell';
+    if(y===today.getFullYear()&&m===today.getMonth()+1&&d===today.getDate())cls+=' today';
+    if(dow===0)cls+=' sunday';
+    if(dow===6)cls+=' saturday';
+    if(termDays[d])cls+=' term';
+
+    var lunarStr='',gapjaStr='';
+    try{
+      var r=M.solarToLunar(y,m,d);
+      lunarStr=r.lunar.month+'/'+r.lunar.day+(r.lunar.isLeapMonth?'윤':'');
+      gapjaStr=r.gapja.dayPillar;
+    }catch(e){}
+
+    html+='<div class="'+cls+'"><div class="solar">'+d+'</div><div class="lunar">'+lunarStr+'</div><div class="gapja">'+gapjaStr+'</div>'+(termDays[d]?'<div style="font-size:.55rem;color:var(--green);font-weight:700">'+termDays[d]+'</div>':'')+'</div>';
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+}
+
+document.getElementById('cal-year').addEventListener('change',renderCal);
+document.getElementById('cal-month').addEventListener('change',renderCal);
+
+// ===== TAB 4: 60 PILLARS =====
+function renderPillars(){
+  var elFilter=document.getElementById('pl-filter-el').value;
+  var animalFilter=document.getElementById('pl-filter-animal').value;
+  var allP=M.SIXTY_PILLARS;
+  var html='';
+  allP.forEach(function(p){
+    if(elFilter&&p.element!==elFilter)return;
+    if(animalFilter&&p.dizhi.animal!==animalFilter)return;
+    html+='<div class="pillar-card" style="border-color:'+EL_COLORS[EL_MAP[p.element]]+'">'+
+      '<div class="pid">#'+p.id+'</div>'+
+      '<div class="phangul" style="color:'+EL_COLORS[EL_MAP[p.element]]+'">'+p.combined.hangul+'</div>'+
+      '<div class="phanja hanja">'+p.combined.hanja+'</div>'+
+      '<div class="element-badge '+elCls(p.element)+'" style="margin:.2rem 0">'+p.element+'('+EL_HANJA[p.element]+') '+p.yinYang+'</div>'+
+      '<div class="panimal">'+p.dizhi.animal+'</div>'+
+      '<div style="font-size:.6rem;color:var(--fg2)">'+(p.combined.romanization||'')+'</div>'+
+      '</div>';
+  });
+  document.getElementById('pl-grid').innerHTML=html||'<p style="color:var(--fg2)">해당 조건의 갑자가 없습니다.</p>';
+}
+
+// ===== TAB 5: 24 SOLAR TERMS =====
+function renderTermBase(){
+  var terms=M.getAllSolarTerms();
+  var html='<thead><tr><th>#</th><th>이름</th><th>한자</th><th>태양황경</th><th>구분</th><th>사주월</th></tr></thead><tbody>';
+  terms.forEach(function(t,i){
+    html+='<tr><td>'+i+'</td><td>'+t.name+'</td><td class="hanja">'+t.hanja+'</td><td>'+t.longitude+'&deg;</td><td>'+(t.type==='jeolgi'?'절기':'중기')+'</td><td>'+t.sajuMonth+'월</td></tr>';
+  });
+  html+='</tbody>';
+  document.getElementById('tm-base').innerHTML=html;
+}
+
+function renderTermYear(){
+  var y=parseInt(document.getElementById('tm-year').value);
+  try{
+    var terms=M.getSolarTermsByYear(y);
+    var html='<thead><tr><th>절기</th><th>한자</th><th>날짜</th><th>시각</th><th>구분</th><th>사주월</th></tr></thead><tbody>';
+    terms.forEach(function(t){
+      html+='<tr><td>'+t.name+'</td><td class="hanja">'+t.nameHanja+'</td><td>'+t.month+'월 '+t.day+'일</td><td>'+t.hour+':'+String(t.minute).padStart(2,'0')+'</td><td>'+(t.type==='jeolgi'?'절기':'중기')+'</td><td>'+t.sajuMonth+'월</td></tr>';
+    });
+    html+='</tbody>';
+    document.getElementById('tm-year-table').innerHTML=html;
+  }catch(e){
+    document.getElementById('tm-year-table').innerHTML='<tr><td>데이터 없음</td></tr>';
+  }
+}
+
+function calcSajuMonth(){
+  var m=parseInt(document.getElementById('tm-sm').value),d=parseInt(document.getElementById('tm-sd').value);
+  if(!m||!d){document.getElementById('tm-sm-result').innerHTML='<p style="color:var(--fg2)">월과 일을 입력하세요.</p>';return}
+  var sm=M.getSajuMonth(m,d);
+  var bl=M.isBeforeLichun(m,d);
+  document.getElementById('tm-sm-result').innerHTML=
+    '<dl class="info-grid">'+
+    '<dt>입력 날짜</dt><dd>'+m+'월 '+d+'일</dd>'+
+    '<dt>사주 월</dt><dd><strong>'+sm+'월 - '+(MONTH_NAMES[sm]||'')+'</strong></dd>'+
+    '<dt>입춘 이전</dt><dd>'+(bl?'<strong style="color:var(--fire)">예</strong> (년주를 전년도로 계산)':'아니오')+'</dd>'+
+    '</dl>';
+}
+
+// ===== INIT =====
+initCal();
+renderPillars();
+renderTermBase();
+renderTermYear();
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    var a=document.activeElement;
+    if(!a)return;
+    var p=a.closest('.tab-content');
+    if(p&&p.id==='tab-saju')calcSaju();
+  }
+});
+</script>
+</body>
+</html>

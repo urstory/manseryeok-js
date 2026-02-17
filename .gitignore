@@ -20,3 +20,6 @@ birth-examples.js
 
 # Auto-generated compressed data
 src/data/date-index-compressed.ts
+
+# Agent workspace
+.sisyphus/

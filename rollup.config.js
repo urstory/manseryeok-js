@@ -44,5 +44,20 @@ export default [
       nodeResolve(),
       typescript()
     ]
+  },
+  // Browser IIFE (for web page)
+  {
+    input: 'src/index.ts',
+    output: {
+      file: 'web/manseryeok.js',
+      format: 'iife',
+      name: 'manseryeok',
+      sourcemap: false
+    },
+    plugins: [
+      aliasPlugin,
+      nodeResolve(),
+      typescript()
+    ]
   }
 ];
