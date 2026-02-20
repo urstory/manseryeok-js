@@ -1,6 +1,6 @@
 {
   "name": "@fullstackfamily/manseryeok",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "type": "module",
   "description": "Korean Lunar Calendar (만세력) JavaScript Library - 1900~2050년 지원, DB 없는 순수 JavaScript 구현",
   "main": "dist/index.js",
