@@ -107,6 +107,36 @@ describe('lunarToSolar', () => {
   test('유효하지 않은 날짜 (음력 2024-13-01)', () => {
     expect(() => lunarToSolar(2024, 13, 1)).toThrow(InvalidDateError);
   });
+
+  test('다음 해 양력으로 넘어가는 음력 12월 (음력 1988-12-18 → 양력 1989-01-25)', () => {
+    const result = lunarToSolar(1988, 12, 18, false);
+
+    expect(result.lunar).toEqual({
+      year: 1988,
+      month: 12,
+      day: 18,
+      isLeapMonth: false,
+    });
+    expect(result.solar).toEqual({ year: 1989, month: 1, day: 25 });
+  });
+
+  test('음력 11·12월 전체가 solarToLunar와 왕복 일치 (1901~2050)', () => {
+    let checked = 0;
+    for (let year = 1901; year <= 2050; year++) {
+      for (let month = 1; month <= 3; month++) {
+        const daysInMonth = new Date(year, month, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+          const { lunar } = solarToLunar(year, month, day);
+          if (lunar.month < 11) continue;
+
+          const result = lunarToSolar(lunar.year, lunar.month, lunar.day, lunar.isLeapMonth);
+          expect(result.solar).toEqual({ year, month, day });
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(5000);
+  });
 });
 
 describe('getGapja', () => {

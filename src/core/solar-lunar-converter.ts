@@ -89,9 +89,14 @@ export function lunarToSolar(
   }
 
   // 2. 음력 → 양력 역인덱스 조회
-  // 전체 인덱스를 순회하며 일치하는 항목 찾기
-  for (let month = 1; month <= 12; month++) {
-    const monthIndex = getMonthlyIndex(lunarYear, month);
+  // 음력 11·12월은 대부분 다음 해 양력 1~2월에 해당하므로
+  // 같은 해 양력 1~12월에 더해 다음 해 양력 1~3월 인덱스까지 조회합니다.
+  const searchMonths: Array<[number, number]> = [];
+  for (let month = 1; month <= 12; month++) searchMonths.push([lunarYear, month]);
+  for (let month = 1; month <= 3; month++) searchMonths.push([lunarYear + 1, month]);
+
+  for (const [solarYear, solarMonth] of searchMonths) {
+    const monthIndex = getMonthlyIndex(solarYear, solarMonth);
     if (!monthIndex) continue;
 
     const entry = monthIndex.entries.find(
