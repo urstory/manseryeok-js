@@ -56,8 +56,8 @@ describe('solarToLunar', () => {
     expect(result.gapja.yearPillarHanja).toBe('己卯');
   });
 
-  test('지원 범위 밖 연도 (1899년)', () => {
-    expect(() => solarToLunar(1899, 1, 1)).toThrow(OutOfRangeError);
+  test('지원 범위 밖 연도 (1390년)', () => {
+    expect(() => solarToLunar(1390, 1, 1)).toThrow(OutOfRangeError);
   });
 
   test('지원 범위 밖 연도 (2051년)', () => {
@@ -100,8 +100,8 @@ describe('lunarToSolar', () => {
     expect(result.gapja.yearPillar).toBe('계해');
   });
 
-  test('지원 범위 밖 연도 (1899년)', () => {
-    expect(() => lunarToSolar(1899, 1, 1)).toThrow(OutOfRangeError);
+  test('지원 범위 밖 연도 (1390년)', () => {
+    expect(() => lunarToSolar(1390, 1, 1)).toThrow(OutOfRangeError);
   });
 
   test('유효하지 않은 날짜 (음력 2024-13-01)', () => {

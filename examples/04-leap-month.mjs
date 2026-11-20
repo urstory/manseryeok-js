@@ -4,7 +4,7 @@
  * 윤달과 평달의 날짜를 각각 양력으로 변환하여 비교합니다.
  */
 
-import { lunarToSolar } from '../dist/index.esm.js';
+import { lunarToSolar } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('윤달 날짜 변환');

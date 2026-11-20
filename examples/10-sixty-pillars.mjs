@@ -4,7 +4,7 @@
  * 60갑자 데이터를 직접 조회하는 예제입니다.
  */
 
-import { SIXTY_PILLARS, getPillarById, getPillarByHangul } from '../dist/index.esm.js';
+import { SIXTY_PILLARS, getPillarById, getPillarByHangul } from '../dist/index.mjs';
 
 // 디버깅: SIXTY_PILLARS 구조 확인
 // console.log('SIXTY_PILLARS[0]:', JSON.stringify(SIXTY_PILLARS[0], null, 2));

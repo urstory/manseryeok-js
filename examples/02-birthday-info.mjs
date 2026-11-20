@@ -4,7 +4,7 @@
  * 양력 생일을 음력으로 변환하고 갑자(년주, 월주, 일주)를 알아봅니다.
  */
 
-import { solarToLunar } from '../dist/index.esm.js';
+import { solarToLunar } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('생일날 음력과 갑자 알아보기');

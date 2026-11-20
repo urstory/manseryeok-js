@@ -31,7 +31,14 @@ export interface SolarToLunarResult {
     dayPillar: string;
     dayPillarHanja: string;
   };
+  /** 율리우스 적일(JD) */
   julianDay: number;
+  /** 그 음력 달의 날수(29 또는 30) — 1.1.0 */
+  lunarMonthDays: number;
+  /** 요일(0 = 일요일 … 6 = 토요일) — 1.1.0 */
+  weekday: number;
+  /** 음력 기준 간지(한국천문연구원 '세차'·'월건'). 사주 연주·월주(절기 기준)가 아니다 — 1.1.0 */
+  lunarCalendarGanji: LunarCalendarGanji;
 }
 
 /**
@@ -57,11 +64,29 @@ export interface LunarToSolarResult {
     dayPillar: string;
     dayPillarHanja: string;
   };
+  /** 율리우스 적일(JD) */
+  julianDay: number;
+  /** 그 음력 달의 날수(29 또는 30) — 1.1.0 */
+  lunarMonthDays: number;
+  /** 요일(0 = 일요일 … 6 = 토요일) — 1.1.0 */
+  weekday: number;
+  /** 음력 기준 간지(한국천문연구원 '세차'·'월건'). 사주 연주·월주(절기 기준)가 아니다 — 1.1.0 */
+  lunarCalendarGanji: LunarCalendarGanji;
 }
 
 /**
  * 갑자 정보
  */
+/** 음력 기준 간지(세차·월건) */
+export interface LunarCalendarGanji {
+  /** 세차(음력 해의 간지), 예: "갑진" */
+  year: string;
+  yearHanja: string;
+  /** 월건(음력 달의 간지), 예: "병인". 윤달에는 월건이 없어 null(한국천문연구원 자료와 같음) */
+  month: string | null;
+  monthHanja: string | null;
+}
+
 export interface GapjaResult {
   yearPillar: string;
   yearPillarHanja: string;
@@ -119,7 +144,7 @@ export class InvalidDateError extends Error {
  */
 export class OutOfRangeError extends Error {
   constructor(year: number) {
-    super(`Year ${year} is out of supported range (1900~2050)`);
+    super(`Year ${year} is out of supported range (1391~2050)`);
     this.name = 'OutOfRangeError';
   }
 }

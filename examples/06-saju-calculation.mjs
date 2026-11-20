@@ -4,7 +4,7 @@
  * 시간 보정을 포함한 사주팔자 계산 예제입니다.
  */
 
-import { calculateSaju, calculateSajuSimple } from '../dist/index.esm.js';
+import { calculateSaju, calculateSajuSimple } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('사주팔자 계산 (시주 포함)');

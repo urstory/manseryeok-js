@@ -4,7 +4,7 @@
  * 2026년 2월 17일은 음력 2026년 1월 1일 (설날)입니다.
  */
 
-import { solarToLunar } from '../dist/index.esm.js';
+import { solarToLunar } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('양력 → 음력 변환 (2026년 설날)');

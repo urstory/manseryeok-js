@@ -8,7 +8,7 @@ import {
   getAllSolarTerms,
   getSolarTermInfoByName,
   getSolarTermsBySajuMonth
-} from '../dist/index.esm.js';
+} from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('24절기 정보 조회');

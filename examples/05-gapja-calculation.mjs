@@ -4,7 +4,7 @@
  * 입춘을 기준으로 년주가 바뀌는 것을 확인합니다.
  */
 
-import { getGapja } from '../dist/index.esm.js';
+import { getGapja } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('갑자(60갑자) 계산');

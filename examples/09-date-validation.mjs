@@ -4,7 +4,7 @@
  * 지원 범위와 유효한 날짜인지 확인합니다.
  */
 
-import { solarToLunar, OutOfRangeError, InvalidDateError } from '../dist/index.esm.js';
+import { solarToLunar, OutOfRangeError, InvalidDateError } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('날짜 유효성 검사');
@@ -31,7 +31,7 @@ console.log(`1800/1/1: ${isValidDate(1800, 1, 1) ? '✅ 유효함' : '❌ 유효
 console.log(`2024/2/10: ${isValidDate(2024, 2, 10) ? '✅ 유효함' : '❌ 유효하지 않음'}`);
 
 console.log('\n--- 지원 범위 ---');
-import { isSupportedYear, getSupportedRange } from '../dist/index.esm.js';
+import { isSupportedYear, getSupportedRange } from '../dist/index.mjs';
 
 const range = getSupportedRange();
 console.log(`지원 연도: ${range.min}년 ~ ${range.max}년`);

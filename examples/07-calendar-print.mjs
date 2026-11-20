@@ -4,7 +4,7 @@
  * 특정 월의 양력/음력 달력을 출력합니다.
  */
 
-import { solarToLunar } from '../dist/index.esm.js';
+import { solarToLunar } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('양력/음력 달력 (2024년 2월)');

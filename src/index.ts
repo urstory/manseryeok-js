@@ -4,7 +4,7 @@
  * Korean Lunar Calendar (만세력) JavaScript Library
  *
  * @description
- * 1900년 ~ 2050년 한국 음력 데이터를 제공하는 순수 JavaScript 라이브러리입니다.
+ * 1391년 ~ 2050년 한국 음력 데이터를 제공하는 순수 JavaScript 라이브러리입니다.
  * DB 없이 동작하며, 빠른 조회 성능과 완전한 TypeScript 지원을 제공합니다.
  *
  * @example

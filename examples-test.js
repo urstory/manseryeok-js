@@ -20,7 +20,7 @@ import {
   getSupportedSolarTermYears,
   isSupportedYear,
   getSupportedRange,
-} from './dist/index.esm.js';
+} from './dist/index.mjs';
 
 console.log('========================================');
 console.log('@fullstackfamily/manseryeok Examples Test');

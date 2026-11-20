@@ -4,7 +4,7 @@
  * 음력 생일을 양력으로 찾습니다.
  */
 
-import { lunarToSolar } from '../dist/index.esm.js';
+import { lunarToSolar } from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('음력 → 양력 변환');

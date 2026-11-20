@@ -8,7 +8,7 @@ import {
   getSolarTermsByYear,
   getSolarTermForDate,
   getSolarTermsByMonth
-} from '../dist/index.esm.js';
+} from '../dist/index.mjs';
 
 console.log('========================================');
 console.log('2024년 절기 시각 조회');

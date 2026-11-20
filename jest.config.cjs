@@ -3,9 +3,6 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts'],
-  moduleNameMapper: {
-    '(.*)/data/date-index$': '$1/data/date-index-compressed'
-  },
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
