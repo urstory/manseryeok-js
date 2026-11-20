@@ -1,6 +1,6 @@
 {
   "name": "@fullstackfamily/manseryeok",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Korean Lunar Calendar (만세력) JavaScript Library - 1900~2050년 지원, DB 없는 순수 JavaScript 구현",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -15,6 +15,7 @@
     "compress-data": "tsx scripts/compress-date-index.ts",
     "prebuild": "npm run compress-data",
     "build": "rollup -c",
+    "pretest": "npm run compress-data",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

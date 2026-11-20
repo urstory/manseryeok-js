@@ -268,3 +268,28 @@ describe('월주 절기 기준 검증 (Issue #5)', () => {
     });
   });
 });
+
+describe('데이터 연속성 (Issue #11)', () => {
+  test('양력 1956-12-31 ↔ 음력 1956-11-30, 일주 임신', () => {
+    const s = solarToLunar(1956, 12, 31);
+    expect(s.lunar).toEqual({ year: 1956, month: 11, day: 30, isLeapMonth: false });
+    expect(s.gapja.dayPillar).toBe('임신');
+    expect(s.gapja.dayPillarHanja).toBe('壬申');
+    expect(lunarToSolar(1956, 11, 30).solar).toEqual({ year: 1956, month: 12, day: 31 });
+  });
+
+  test('1900-01-01 ~ 2050-12-31 모든 날짜가 빠짐없이 이어진다', () => {
+    const start = Date.UTC(1900, 0, 1);
+    const end = Date.UTC(2050, 11, 31);
+    let prevJd: number | null = null;
+    let count = 0;
+    for (let t = start; t <= end; t += 86400000) {
+      const d = new Date(t);
+      const r = solarToLunar(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+      if (prevJd !== null) expect(r.julianDay).toBe(prevJd + 1);
+      prevJd = r.julianDay;
+      count++;
+    }
+    expect(count).toBe(55152);
+  });
+});

@@ -590,6 +590,14 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 ## 변경 이력
 
+### v1.0.9 (2026-11-20)
+
+- **버그 수정**: `lunarToSolar()`가 다음 해 양력 1~2월에 해당하는 음력 11·12월 날짜를 찾지 못하던 문제 수정 (Issue [#9](https://github.com/urstory/manseryeok-js/issues/9), PR [#10](https://github.com/urstory/manseryeok-js/pull/10) by [@westkite1201](https://github.com/westkite1201))
+  - 예: 음력 1988-12-18 → 양력 1989-01-25가 `InvalidDateError`를 던지던 문제
+- **버그 수정**: 만세력 데이터에서 빠져 있던 양력 1956-12-31(음력 1956-11-30, 임신일) 추가 (Issue [#11](https://github.com/urstory/manseryeok-js/issues/11), 제보 [@westkite1201](https://github.com/westkite1201))
+  - 1900-01-01 ~ 2050-12-31 전체 날짜가 빠짐없이 이어지는지 검사하는 테스트 추가
+- **개발**: `npm test` 전에 압축 데이터를 자동 생성하도록 `pretest` 스크립트 추가
+
 ### v1.0.8 (2026-03-28)
 
 - **버그 수정**: `"type": "module"` 제거로 CJS 호환성 수정 (PR [#6](https://github.com/urstory/manseryeok-js/pull/6) by [@Magiof](https://github.com/Magiof))

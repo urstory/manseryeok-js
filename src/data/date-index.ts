@@ -130407,10 +130407,16 @@ export const SOLAR_TO_LUNAR_INDEX: Map<string, MonthlyIndex> = new Map([
       solar: { year: 1956, month: 12, day: 30 },
       lunar: { year: 1956, month: 11, day: 29, isLeap: false },
       gapja: { yearPillarId: 32, monthPillarId: 36, dayPillarId: 7 }
+    },
+    {
+      jd: 2435839,
+      solar: { year: 1956, month: 12, day: 31 },
+      lunar: { year: 1956, month: 11, day: 30, isLeap: false },
+      gapja: { yearPillarId: 32, monthPillarId: 36, dayPillarId: 8 }
     }
     ],
     startJD: 2435809,
-    endJD: 2435838
+    endJD: 2435839
   }],
   ['1957-01', {
     year: 1957,
