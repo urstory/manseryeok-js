@@ -4,7 +4,11 @@ Korean Lunar Calendar (만세력) JavaScript Library
 
 한국 음력(만세력) 데이터를 제공하는 순수 JavaScript/TypeScript 라이브러리입니다.
 
-> **1.2.0(개발 중 — 아직 npm에 올리지 않음): 절입일 앞뒤의 연주·월주가 달라집니다.** 연주·월주의 경계를 양력 고정 날짜(2/4·3/6 …)에서 실제 절입 시각으로 바꿉니다. 1900~2050년 55,152일 가운데 월주 884일·연주 107일의 값이 바뀝니다(버그 수정). 자세한 내용은 [변경 이력](#v120-개발-중--아직-npm에-올리지-않음)을 보세요.
+> **1.2.0-rc.1 (`next` 꼬리표, 정식 전): 절입일 앞뒤의 연주·월주가 달라집니다.** 연주·월주의 경계를 양력 고정 날짜(2/4·3/6 …)에서 실제 절입 시각으로 바꿉니다. 1900~2050년 55,152일 가운데 월주 884일·연주 107일의 값이 바뀝니다(버그 수정).
+> - 시를 준 `calculateSaju`도 절입일에는 연주·월주가 달라집니다(절입 시각과 견줘 정함).
+> - `getSolarTermsByYear` 등 절기 조회 함수의 2020~2030년 절기 시각 값이 모두 바뀝니다(1.1.0은 해마다 같은 틀린 값).
+>
+> 정식판(`latest`)은 아직 1.1.0입니다. 자세한 내용은 [변경 이력](#v120-rc1-next-꼬리표-정식-전)을 보세요.
 
 ## 왜 이 라이브러리인가?
 
@@ -33,14 +37,17 @@ Korean Lunar Calendar (만세력) JavaScript Library
 - ✅ **정확한 60갑자 지지 오행** - 진·오·술 오행 오류 수정 (v1.0.6)
 - ✅ **정확한 월주 절기 기준 계산** - 월주를 절기(節氣) 기준으로 재계산 (v1.0.7)
 - ✅ **음력 달 날수·요일·세차·월건** - 변환 결과에 함께 제공 (v1.1.0)
-- ✅ **작아진 번들** - 범위는 4배 넓어졌지만 크기는 약 1/3 (gzip 약 14KB, v1.1.0)
-- ✅ **실제 절입 시각으로 연주·월주** - 1391~2050년 24절기 표(분 단위), 절입일에는 `sajuBoundary`로 바뀌는 시각과 앞뒤 값 (v1.2.0, 개발 중)
-- ✅ **시각을 받는 함수와 한국 법정 시계** - `getGapjaAt`·`getJeolAround`·`getIpchun`·`getSajuMonthAt`, 옵션 `clock`(1954~1961 UTC+8:30·서머타임) (v1.2.0, 개발 중)
+- ✅ **작은 번들** - 날짜마다 데이터를 싣지 않고 음력 달 표와 절입 시각 표만 압축해 넣음 (gzip 약 33KB, v1.2.0 — 자세한 숫자는 [번들 크기](#번들-크기))
+- ✅ **실제 절입 시각으로 연주·월주** - 1391~2050년 24절기 표(분 단위), 절입일에는 `sajuBoundary`로 바뀌는 시각과 앞뒤 값 (v1.2.0-rc.1)
+- ✅ **시각을 받는 함수와 한국 법정 시계** - `getGapjaAt`·`getJeolAround`·`getIpchun`·`getSajuMonthAt`, 옵션 `clock`(1954~1961 UTC+8:30·서머타임) (v1.2.0-rc.1)
 
 ## 설치
 
 ```bash
 npm install @fullstackfamily/manseryeok
+
+# 1.2.0 정식 전 판(1.2.0-rc.1, 절입 시각 경계)을 써 보려면
+npm install @fullstackfamily/manseryeok@next
 ```
 
 ## 예제 실행
@@ -203,8 +210,8 @@ calculateSaju(2024, 2, 4, undefined, 0, { boundaryRule: 'day-end' });
 | 값 | 입력 시각을 읽는 법 |
 |---|---|
 | `'kst-fixed'`(기본) | 언제나 UTC+9 (1.1.0까지와 같음) |
-| `'korea-legal'` | 그때의 한국 법정 시계(IANA tz database `Asia/Seoul`, 서머타임 포함). 시주의 경도 보정도 그 시계의 자오선 기준 |
-| `{ utcOffsetMinutes: n }` | 호출자가 준 고정 차이(해외 출생 등) |
+| `'korea-legal'` | 그때의 한국 법정 시계(IANA tz database `Asia/Seoul`, 서머타임 포함). 시주의 경도 보정도 그 시계의 자오선(UTC 차이 ÷ 4분) 기준이라, 서머타임이면 표준시보다 1시간 더 빠집니다. 서머타임 0시대(벽시계 0:00~0:59)는 표준시로 아직 전날이므로 일주도 하루 전 날의 일진입니다 |
+| `{ utcOffsetMinutes: n }` | 호출자가 준 고정 차이(−720~840, 해외 출생 등). 출생지가 한국이 아닐 수 있으므로 **`longitude`를 함께 줄 때만** 경도 보정을 합니다(주지 않으면 보정 없음). 일주는 입력 날짜 그대로 |
 
 ```ts
 // 기본(kst-fixed)으로 셈했는데 그때 법정 시계가 UTC+9가 아니었으면 알림을 단다
@@ -219,6 +226,13 @@ calculateSaju(1987, 10, 11, 2, 30, { clock: 'korea-legal', fold: 1 });
 
 // 해외 출생(예: 베이징 UTC+8)
 getGapjaAt(2024, 2, 4, 16, 27, { clock: { utcOffsetMinutes: 480 } }).monthPillar; // '병인'
+
+// 뉴욕(UTC−5) 정오: longitude를 주지 않으면 경도 보정 없이 오시, 주면 그 경도로 보정
+calculateSaju(2000, 1, 1, 12, 0, { clock: { utcOffsetMinutes: -300 } }).hourPillar;                 // '무오'
+calculateSaju(2000, 1, 1, 12, 0, { clock: { utcOffsetMinutes: -300 }, longitude: -74 }).correctedTime; // { hour: 12, minute: 4 }
+
+// 1988년 서머타임(UTC+10) 7월 1일 0시 10분: 표준시로는 6월 30일 23시 10분이라 일주는 6월 30일
+calculateSaju(1988, 7, 1, 0, 10, { clock: 'korea-legal' }); // 무진년 무오월 병진일 기해시
 ```
 
 1.x의 기본값은 `'kst-fixed'` 그대로입니다(바꾸면 그 기간에 태어난 사람의 값이 달라지므로 2.0에서 정합니다). 날짜만 받는 함수는 언제나 고정 UTC+9의 날짜·정오를 쓰고, 법정 시계가 달랐던 때의 절입일에는 `sajuBoundary.atLegalClock`에 그 시계로 본 시각을 함께 줍니다(예: 1954년 대설은 고정 UTC+9로 12월 8일 00:29, 법정 시계로 12월 7일 23:59).
@@ -237,6 +251,8 @@ getSajuMonthAt(2024, 2, 4);              // 12 (축월, 정오의 값)
 getSajuMonthAt(2024, 2, 4, 17, 27);      // 1 (인월)
 getSajuBoundary(2024, 2, 4)?.at;         // { year: 2024, month: 2, day: 4, hour: 17, minute: 27 }
 ```
+
+> **사주 월 번호가 두 가지입니다.** `getJeolAround(…).prev.sajuMonth`·`getIpchun(…).sajuMonth` 등 `SolarTermWithDate.sajuMonth`는 `SOLAR_TERM_NAMES`와 같은 번호라 입춘이 **2**입니다(소한 1 … 대설 12). `getSajuMonthAt`·`getSajuMonth`는 입춘 뒤가 **1**(인월)입니다. `getSajuMonthAt = SolarTermWithDate.sajuMonth − 1`(0이면 12)입니다. 1.x 호환 때문에 둘 다 그대로 둡니다.
 
 ### 사주팔자 계산 (시주 포함)
 
@@ -408,7 +424,7 @@ console.log('합친 로마자:', pillar.combined.romanization); // Gapja
 ### 24절기 정보 조회
 
 ```ts
-import { getAllSolarTerms, getSolarTermByName, getSolarTermsBySajuMonth } from '@fullstackfamily/manseryeok';
+import { getAllSolarTerms, getSolarTermInfoByName, getSolarTermsBySajuMonth } from '@fullstackfamily/manseryeok';
 
 // 전체 24절기 목록
 const allTerms = getAllSolarTerms();
@@ -416,8 +432,8 @@ console.log('24절기 개수:', allTerms.length);
 // 24절기 개수: 24
 
 // 절기 이름으로 조회
-const ipchun = getSolarTermByName('입춘');
-console.log('입춘:', ipchun?.nameHanja, '황경', ipchun?.longitude, '°');
+const ipchun = getSolarTermInfoByName('입춘');
+console.log('입춘:', ipchun?.hanja, '황경', ipchun?.longitude, '°');
 // 입춘: 立春 황경 315 °
 
 // 사주 월에 해당하는 절기 목록
@@ -436,13 +452,12 @@ import { getSajuMonth } from '@fullstackfamily/manseryeok';
 // 양력 날짜를 사주 월로 변환
 // 사주에서 월은 절기를 기준으로 변경됩니다
 
-console.log('2월 1일:', getSajuMonth(2, 1));  // 1 (소우, 아직 1월)
-console.log('2월 5일:', getSajuMonth(2, 5));  // 1 (입춘 전)
-console.log('2월 6일:', getSajuMonth(2, 6));  // 2 (입추 후, 2월 시작!)
-// 입춘(2월 4일경) 이후부터 2월로 계산
-
-console.log('3월 5일:', getSajuMonth(3, 5));  // 2 (경칩 전)
-console.log('3월 7일:', getSajuMonth(3, 7));  // 3 (경칩 후, 3월 시작!)
+// 돌려주는 번호: 1 = 인월(입춘부터) … 11 = 자월(대설부터), 12 = 축월(소한부터)
+console.log('2월 1일:', getSajuMonth(2, 1));  // 12 (축월, 고정 입춘일 2/4 전)
+console.log('2월 5일:', getSajuMonth(2, 5));  // 1 (인월)
+console.log('2월 6일:', getSajuMonth(2, 6));  // 1 (인월)
+console.log('3월 5일:', getSajuMonth(3, 5));  // 1 (인월, 고정 경칩일 3/6 전)
+console.log('3월 7일:', getSajuMonth(3, 7));  // 2 (묘월)
 ```
 
 ### 24절기 한눈에 보기
@@ -585,13 +600,13 @@ r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, m
 
 ### `getGapjaAt(year, month, day, hour, minute?, options?)` (v1.2.0)
 
-시각까지 주고 연주·월주·일주를 구합니다(시주 없음). 입력 시각을 절대 시각으로 바꿔 절입 시각과 견줍니다(절입 분부터 뒤). 일주는 입력 날짜의 일진입니다.
+시각까지 주고 연주·월주·일주를 구합니다(시주 없음). 입력 시각을 절대 시각으로 바꿔 절입 시각과 견줍니다(절입 분부터 뒤). 일주는 입력 날짜의 일진입니다(다만 `korea-legal`의 서머타임 0시대는 하루 전).
 
-- `hour`: 0~23, `minute`: 0~59(기본 0) — 범위 밖이면 `InvalidDateError`
-- `options.clock`: `'kst-fixed'`(기본)·`'korea-legal'`·`{ utcOffsetMinutes }`, `options.fold`: `0 | 1`
+- `hour`: 0~23, `minute`: 0~59(기본 0) — 범위 밖이면 `InvalidDateError`(새 함수는 시·분을 검사합니다)
+- `options.clock`: `'kst-fixed'`(기본)·`'korea-legal'`·`{ utcOffsetMinutes }`(−720~840), `options.fold`: `0 | 1` — 그 밖의 값이면 `TypeError`
 
 **반환값:** `GapjaResult & { sajuBoundary, nearBoundary, clockNotice }`
-- `sajuBoundary`: 입력 날짜(또는 그 순간의 한국 시각 날짜)에 드는 절의 경계, `chosen`은 시각으로 정한 쪽
+- `sajuBoundary`: 입력 날짜(고정 UTC+9 달력 또는 입력 시계의 달력)나 그 순간의 한국 시각 날짜에 드는 절 가운데 입력 시각에 가까운 것의 경계, `chosen`은 시각으로 정한 쪽
 - `nearBoundary`: 입력 시각이 절입에서 `uncertainMinutes` 안이면 `true`(값은 그래도 견준 대로)
 - `clockNotice`: `{ legalOffsetMinutes, dst, message }` 또는 `null`
 
@@ -601,7 +616,7 @@ r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, m
 
 ### `getJeolAround(year, month, day, hour, minute?, options?)` (v1.2.0)
 
-그 순간의 직전 절(`prev`, 절입 분이 입력 시각 이하인 마지막 절)과 다음 절(`next`)을 `SolarTermWithDate`로 줍니다(한국 시각 고정 UTC+9). 대운 계산 등에 씁니다. `options`는 `getGapjaAt`과 같습니다.
+그 순간의 직전 절(`prev`, 절입 분이 입력 시각 이하인 마지막 절)과 다음 절(`next`)을 `SolarTermWithDate`로 줍니다(한국 시각 고정 UTC+9). 대운 계산 등에 씁니다. `options`는 `getGapjaAt`과 같습니다. 결과의 `sajuMonth`는 입춘이 2인 번호입니다(`getSajuMonthAt`과 1 다름 — 위 "사주 월 번호가 두 가지입니다").
 
 ### `getIpchun(year)` (v1.2.0)
 
@@ -609,7 +624,7 @@ r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, m
 
 ### `getSajuMonthAt(year, month, day, hour?, minute?, options?)` (v1.2.0)
 
-연도까지 받아 사주 월(1 = 인월 … 11 = 자월, 12 = 축월)을 구합니다. 시를 주면 절입 시각과 견주고, 주지 않으면 `options.boundaryRule`(기본 `'noon'`)대로 냅니다. `options`에는 `clock`·`fold`도 줄 수 있습니다.
+연도까지 받아 사주 월(1 = 인월 … 11 = 자월, 12 = 축월)을 구합니다. `SolarTermWithDate.sajuMonth`(입춘이 2)와 번호가 다릅니다: `getSajuMonthAt = sajuMonth − 1`(0이면 12). 시를 주면 절입 시각과 견주고, 주지 않으면 `options.boundaryRule`(기본 `'noon'`)대로 냅니다. `options`에는 `clock`·`fold`도 줄 수 있습니다.
 
 ### `calculateSaju(solarYear, solarMonth, solarDay, solarHour?, solarMinute?, options?)`
 
@@ -619,10 +634,11 @@ r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, m
 - `solarYear`: 양력 년
 - `solarMonth`: 양력 월 (1~12)
 - `solarDay`: 양력 일 (1~31)
-- `solarHour`: 양력 시 (0~23, 선택사항)
+- `solarHour`: 양력 시 (0~23, 선택사항). 시를 모르면 `undefined`를 넘기세요(`null`은 1.1.0처럼 0시로 읽힙니다)
 - `solarMinute`: 양력 분 (0~59, 기본값: 0)
+- `calculateSaju`는 시·분의 범위를 검사하지 않습니다(1.1.0과 같음). 다만 유한한 수가 아니면(`NaN` 등) `InvalidDateError`를 던집니다(v1.2.0). 새 함수(`getGapjaAt` 등)는 범위까지 검사합니다
 - `options`: 사주 계산 옵션
-  - `longitude`: 경도 (기본값: 127 - 서울)
+  - `longitude`: 경도 (기본값: 127 - 서울). `clock: { utcOffsetMinutes }`에서는 `longitude`를 함께 줄 때만 경도 보정을 합니다(v1.2.0)
   - `applyTimeCorrection`: 시간 보정 적용 여부 (기본값: true)
   - `boundaryRule` (v1.2.0): 시를 주지 않았을 때 절입일의 연주·월주(기본 `'noon'`). 시를 주면 절입 시각과 견주므로 쓰지 않습니다. 단 `'legacy-fixed'`는 시를 주어도 1.1.0처럼 고정 날짜로 냅니다
   - `clock`·`fold` (v1.2.0): 입력 시각을 읽는 시계([한국 표준시와 서머타임](#한국-표준시와-서머타임-clock-v120))
@@ -658,7 +674,7 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 **반환값:** 24절기 정보 배열
 
-### `getSolarTermByName(name)`
+### `getSolarTermInfoByName(name)`
 
 절기 이름으로 절기 정보를 조회합니다.
 
@@ -667,7 +683,7 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 **반환값:** 절기 정보 또는 undefined
 
-### `getSolarTermByIndex(index)`
+### `getSolarTermInfoByIndex(index)`
 
 절기 인덱스로 절기 정보를 조회합니다.
 
@@ -715,7 +731,7 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 ## 알려진 제한
 
 - **시주의 23시대 처리와 경도 보정은 1.1.0 그대로입니다.** 23시는 그날 일주에 자시를 붙이고(야자시), 경도 보정은 분만 빼는 간단한 셈입니다. 절입과 무관한 사람들의 시주가 바뀌지 않도록 1.2.0에서 고치지 않았습니다.
-- **시각을 받는 함수의 기본 시계는 고정 UTC+9(`clock: 'kst-fixed'`)입니다.** 1908~1911·1954~1961년(UTC+8:30)과 서머타임 기간에는 `clockNotice`로 알립니다. 그때의 시계로 적은 시각이면 `clock: 'korea-legal'`을 쓰세요.
+- **시각을 받는 함수의 기본 시계는 고정 UTC+9(`clock: 'kst-fixed'`)입니다.** 1908~1911·1954~1961년(UTC+8:30)과 서머타임 기간에는 `clockNotice`로 알립니다. 1908년 4월 전 날짜는 서울 지방 평균시(UTC+8:27:52)와 견주므로, 시각을 주면 언제나 알림이 붙습니다. 그때의 시계로 적은 시각이면 `clock: 'korea-legal'`을 쓰세요.
 - **절입 앞뒤 `uncertainMinutes`분 안은 앞인지 뒤인지 정할 수 없습니다.** 절기 시각이 분 단위이고 옛날일수록 지구 자전 보정값(ΔT)이 불확실하기 때문입니다. 이런 입력에는 `nearBoundary: true`를 답니다.
 
   | 해 | `uncertainMinutes` |
@@ -735,9 +751,9 @@ v1.2.0은 24절기 절입 시각 15,845개를 넣었습니다. 이웃한 절기 
 
 | 포맷 | v1.0.9 (1900~2050) | v1.1.0 (1391~2050) | v1.2.0 (1391~2050, 절입 시각 표 포함) |
 |------|------|------|------|
-| ESM | ~304 KB | ~95 KB | ~122 KB |
-| CJS | ~304 KB | ~96 KB | ~123 KB |
-| Gzip | ~103 KB | ~14 KB | ~32 KB |
+| ESM | ~304 KB | ~95 KB | ~126 KB |
+| CJS | ~304 KB | ~96 KB | ~127 KB |
+| Gzip | ~103 KB | ~14 KB | ~33 KB |
 
 ## 성능
 
@@ -751,9 +767,9 @@ v1.2.0은 24절기 절입 시각 15,845개를 넣었습니다. 이웃한 절기 
 
 ## 변경 이력
 
-### v1.2.0 (개발 중 — 아직 npm에 올리지 않음)
+### v1.2.0-rc.1 (`next` 꼬리표, 정식 전)
 
-> **이 판은 아직 나오지 않았습니다.** 구현과 테스트는 끝났고 저장소의 판 번호는 `1.2.0-rc.1`이지만, npm에는 아직 올리지 않았습니다. 설치되는 판은 여전히 1.1.0입니다. 올리기 전에 `1.2.0-rc.1`을 `next` 꼬리표로 먼저 냅니다.
+> **정식판이 아닙니다.** `1.2.0-rc.1`은 `next` 꼬리표로 냅니다(`npm install @fullstackfamily/manseryeok@next`). 꼬리표 없이 설치하는 정식판(`latest`)은 1.1.0이고, 확인을 마치면 `1.2.0`으로 냅니다.
 
 **가장 큰 변화: 연주·월주의 경계를 실제 절입 시각으로 바꿉니다.** 1.1.0은 2/4·3/6 같은 양력 고정 날짜로 연주·월주를 바꿔서, 절입일 앞뒤에 태어난 사람의 월주(입춘 앞뒤는 띠까지)가 틀릴 수 있었습니다. 1900~2050년 55,152일 가운데 **월주 884일, 연주 107일**이 실제와 달랐습니다(1.6%).
 
@@ -803,13 +819,14 @@ solarToLunar(2024, 2, 4).gapja.yearPillar   // '계묘' — 1.1.0은 '갑진'(2/
 - 새 함수: `getGapjaAt`(시각까지 주고 연·월·일주), `getSajuBoundary`(그날의 경계 정보), `getJeolAround`(직전 절·다음 절), `getIpchun`(그 해 입춘), `getSajuMonthAt`(연도까지 받는 사주 월). 사용법은 위 [절입일의 연주·월주](#절입일의-연주월주-v120)와 API 문서.
 - 옵션 `clock`: `'kst-fixed'`(1.x 기본, 언제나 UTC+9), `'korea-legal'`(그때의 법정 시계 — 1908년 전 지방 평균시 UTC+8:27:52, 1908~1911·1954~1961 UTC+8:30, 서머타임 1948~1951·1955~1960·1987~1988), `{ utcOffsetMinutes }`. 기본값은 1.x에서 바꾸지 않고, 법정 시계가 달랐던 때면 `clockNotice`로 알립니다. 서머타임이 끝나며 두 번 지나간 시각은 `fold: 0 | 1`(기본 0 = 앞의 것), 건너뛴 시각은 전이 직전의 차이로 읽고 `clockNotice.message`에 적습니다.
 - 법정 시계의 전이 28개는 IANA tz database(2026f, 공개 도메인)의 `Asia/Seoul` 줄(`data/tz/asia-seoul.tzdata`)에서 만든 상수입니다. 플랫폼의 `Intl` 자료에 기대지 않습니다.
-- `korea-legal`·`{ utcOffsetMinutes }`의 경도 보정은 입력을 읽은 시계의 자오선(UTC 차이 ÷ 4분)을 기준으로 합니다. 기본 `kst-fixed`의 셈은 1.1.0 그대로입니다.
+- `korea-legal`·`{ utcOffsetMinutes }`의 경도 보정은 입력을 읽은 시계의 자오선(UTC 차이 ÷ 4분)을 기준으로 합니다(서머타임이면 1시간 더 빠짐). `{ utcOffsetMinutes }`는 `longitude`를 함께 줄 때만 보정합니다. `korea-legal`의 서머타임 0시대는 표준시로 전날이라 일주(와 시간을 정하는 일간)도 하루 전 날의 일진입니다. 기본 `kst-fixed`의 셈은 1.1.0 그대로입니다.
+- 옵션 검사: `fold`가 0·1이 아니거나 `utcOffsetMinutes`가 −720~840 밖이면 `TypeError`. 선택 인자에 `null`을 넘기면 주지 않은 것과 같습니다.
 
 #### 절기 조회 함수
 
 `getSolarTermsByYear`·`getSolarTermForDate`·`getSolarTermsByMonth`는 반환 꼴 그대로, 값을 표에서 냅니다(한국 시각 고정 UTC+9의 월·일·시·분). 지원 해가 2020~2030 → **1391~2050**으로 넓어지고, 2020~2030년의 값도 바뀝니다(1.1.0의 값은 해마다 같은 틀린 값 — 예: 2024년 입춘 5시 2분 → 17시 27분). 해 기준으로 묶을 때는 절입 순간을 라이브러리 날짜로 옮긴 해로 묶습니다. 그래서 1391~1581년(율리우스력)은 해마다 대한부터 다음 소한까지 24개, **1582년은 10월 5~14일이 없어 23개**입니다.
 
-- `getSupportedSolarTermYears()`·`SUPPORTED_SOLAR_TERM_YEARS`: 1391~2050. `SUPPORTED_SOLAR_TERM_YEARS`의 타입은 `readonly number[]`로 넓어졌습니다(1.1.0은 2020~2030의 리터럴 튜플).
+- `getSupportedSolarTermYears()`·`SUPPORTED_SOLAR_TERM_YEARS`: 1391~2050. `SUPPORTED_SOLAR_TERM_YEARS`의 타입은 `readonly number[]`로 넓어졌습니다(1.1.0은 2020~2030의 리터럴 튜플). 같은 이유로 `SupportedSolarTermYear` 타입도 2020~2030 리터럴의 합집합에서 `number`가 되었습니다.
 - `SOLAR_TERMS_DATA`: 없애지 않고 같은 꼴(`{ [year]: SolarTermDateTime[] }`)을 표에서 만들어 줍니다(처음 읽을 때 그 해만). `@deprecated` — `getSolarTermsByYear`를 쓰세요.
 - `getSajuMonth(month, day)`·`isBeforeLichun(month, day)`: 해를 받지 않아 고칠 수 없으므로 값은 1.1.0 그대로 두고 `@deprecated`를 달았습니다(`getSajuMonthAt`·`getIpchun`을 쓰세요).
 - 지원 해 밖에서 `getSolarTermsByYear`가 던지는 오류의 문구가 `Supported years: 1391~2050`으로 바뀌었습니다.
@@ -826,6 +843,7 @@ solarToLunar(2024, 2, 4).gapja.yearPillar   // '계묘' — 1.1.0은 '갑진'(2/
 - 달라지는 날짜의 전체 목록은 `docs/1.2.0-changed-dates.tsv`(1900~2050, 884줄 — npm 꾸러미에도 들어 있음)와 `docs/1.2.0-changed-dates-pre1900.tsv`(1391~1899, 21,541줄 — 저장소에만)로 둡니다. 저장해 둔 사주를 고칠 때 쓰세요. 칸: `date`, `v110_year`·`v110_month`(1.1.0 값), `v120_year`·`v120_month`(1.2.0 기본값 = 정오), 절입일이면 `term`·`term_kst`(절과 절입 시각)와 `day_end_*`·`day_start_*`(다른 두 규칙의 값). 목록은 npm의 1.1.0을 실제로 돌려 만들었습니다(`npm run gen-changed-dates`).
 - 옛 값이 필요하면 `boundaryRule: 'legacy-fixed'`(1.1.0을 그대로 되살림 — 율리우스력 날짜에도 2/4·3/6… 그대로).
 - 음력 변환·일주·요일·`julianDay`·`lunarCalendarGanji`는 바뀌지 않습니다(241,017일 전수를 1.1.0과 같게 테스트로 고정). 함수 이름·인자·기존 필드도 그대로이고 더하기만 합니다.
+- **타입에서는 순수한 더하기가 아닙니다.** `SolarToLunarResult`·`LunarToSolarResult`에 `sajuBoundary`, `SajuResult`에 `sajuBoundary`·`nearBoundary`·`clockNotice`가 필수 필드로 늘었습니다. 이 타입의 객체를 직접 만드는 TypeScript 코드(테스트 목 등)는 이 필드를 넣어야 컴파일됩니다. 라이브러리가 돌려준 값을 읽기만 하는 코드는 그대로입니다.
 
 #### 정오 직후 절입 (알려진 제한으로 남김)
 
@@ -843,7 +861,7 @@ solarToLunar(2024, 2, 4).gapja.yearPillar   // '계묘' — 1.1.0은 '갑진'(2/
 
 #### 남은 일
 
-앱용 Dart 사본 갱신, npm에 `1.2.0-rc.1`을 `next` 꼬리표로 올리기.
+앱용 Dart 사본 갱신, `1.2.0-rc.1`을 `next` 꼬리표로 낸 뒤 확인을 마치면 `1.2.0` 정식판(`package.json`의 `publishConfig.tag`를 지우고 `latest`로).
 
 ### v1.1.0 (2026-11-20)
 
