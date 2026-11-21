@@ -13,6 +13,9 @@
   ],
   "scripts": {
     "gen-lunar-table": "node scripts/build-lunar-table.mjs",
+    "gen-terms-table": "node scripts/build-terms-table.mjs",
+    "gen-tz-table": "node scripts/build-tz-table.mjs",
+    "check-tables": "node scripts/check-tables.mjs",
     "build": "rollup -c",
     "test": "jest",
     "test:watch": "jest --watch",

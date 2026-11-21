@@ -8,7 +8,8 @@
  * (한국천문연구원 음양력 서비스와 같은 관례). 1582-10-05 ~ 1582-10-14는 존재하지 않는 날짜다.
  */
 
-import type { SolarToLunarEntry } from '../types';
+import type { BoundaryRule, SolarToLunarEntry } from '../types';
+import { kstDayStartMinute, MONTH_PILLAR_BASE, pillarIdsAtMinute } from '../core/terms';
 import {
   LUNAR_TABLE_B64,
   LUNAR_TABLE_MONTHS,
@@ -182,19 +183,20 @@ export function jdFromLunar(year: number, month: number, day: number, isLeap: bo
 }
 
 // ─────────────────────────────────────────────
-// 간지 ID (1.0.x와 같은 규칙)
+// 연주·월주 ID
 // ─────────────────────────────────────────────
 
 /**
- * 연주·월주 경계 날짜(양력 월·일 고정, 1.0.x와 같음).
- * 실제 절입 시각을 쓰지 않는 근사 규칙이다.
+ * 1.1.0까지의 연주·월주 경계 날짜(양력 월·일 고정). 실제 절입 시각을 쓰지 않는 근사 규칙이다.
+ * 1.2.0에서는 boundaryRule: 'legacy-fixed'로만 쓴다.
  */
 const SAJU_MONTH_START: Array<[number, number, number]> = [
   [1, 6, 12], [2, 4, 1], [3, 6, 2], [4, 5, 3], [5, 6, 4], [6, 6, 5],
   [7, 7, 6], [8, 8, 7], [9, 8, 8], [10, 8, 9], [11, 8, 10], [12, 7, 11],
 ];
 
-function sajuMonthOf(month: number, day: number): number {
+/** 1.1.0의 고정 날짜 규칙으로 본 사주 월 */
+export function legacySajuMonthOf(month: number, day: number): number {
   for (let i = SAJU_MONTH_START.length - 1; i >= 0; i--) {
     const [m, d, s] = SAJU_MONTH_START[i];
     if (month > m || (month === m && day >= d)) return s;
@@ -202,15 +204,38 @@ function sajuMonthOf(month: number, day: number): number {
   return 11;
 }
 
-/** 寅月 시작 60갑자 ID (연간 甲己·乙庚·丙辛·丁壬·戊癸) */
-const MONTH_PILLAR_BASE = [2, 14, 26, 38, 50] as const;
-
-function pillarIds(year: number, month: number, day: number, jd: number) {
+/** 1.1.0의 고정 날짜 규칙으로 본 연주·월주 ID (율리우스력 날짜에도 2/4·3/6… 그대로) */
+export function legacyPillarIds(year: number, month: number, day: number): { yearPillarId: number; monthPillarId: number; sajuMonth: number } {
   const beforeLichun = month < 2 || (month === 2 && day < 4);
   const yearPillarId = mod(year - (beforeLichun ? 1 : 0) - 4, 60);
-  const monthPillarId = (MONTH_PILLAR_BASE[(yearPillarId % 10) % 5] + sajuMonthOf(month, day) - 1) % 60;
-  const dayPillarId = mod(jd - DAY_PILLAR_EPOCH, 60);
-  return { yearPillarId, monthPillarId, dayPillarId };
+  const sajuMonth = legacySajuMonthOf(month, day);
+  const monthPillarId = (MONTH_PILLAR_BASE[(yearPillarId % 10) % 5] + sajuMonth - 1) % 60;
+  return { yearPillarId, monthPillarId, sajuMonth };
+}
+
+/**
+ * 날짜만 주었을 때의 연주·월주 ID (1.2.0)
+ * - 'noon': 그날 한국 시각(고정 UTC+9) 12:00의 값(절입 분이 12:00 이하면 새 달)
+ * - 'day-end' / 'day-start': 절입이 든 날은 하루 전체를 새 달 / 앞 달로
+ * - 'legacy-fixed': 1.1.0의 고정 날짜 규칙
+ */
+export function datePillarIds(jd: number, rule: BoundaryRule = 'noon'): { yearPillarId: number; monthPillarId: number; sajuMonth: number } {
+  if (rule === 'legacy-fixed') {
+    const s = solarFromJd(jd);
+    return legacyPillarIds(s.year, s.month, s.day);
+  }
+  const start = kstDayStartMinute(jd);
+  let x = start + 720;
+  if (rule === 'day-end') x = start + 1439;
+  else if (rule === 'day-start') x = start - 1;
+  else if (rule !== 'noon') throw new TypeError(`Unknown boundaryRule: ${String(rule)}`);
+  const ids = pillarIdsAtMinute(x);
+  if (!ids) throw new RangeError(`No solar term data for JD ${jd}`);
+  return ids;
+}
+
+function dayPillarIdOfJd(jd: number): number {
+  return mod(jd - DAY_PILLAR_EPOCH, 60);
 }
 
 /**
@@ -232,16 +257,17 @@ export function weekdayOfJd(jd: number): number {
 // 월별 인덱스 (1.0.x 공개 API와 같은 모양)
 // ─────────────────────────────────────────────
 
-/** JD 하나의 엔트리 */
-export function entryOfJd(jd: number): SolarToLunarEntry | undefined {
+/** JD 하나의 엔트리 (연주·월주는 boundaryRule대로, 기본 'noon') */
+export function entryOfJd(jd: number, rule: BoundaryRule = 'noon'): SolarToLunarEntry | undefined {
   const lunar = lunarFromJd(jd);
   if (!lunar) return undefined;
   const solar = solarFromJd(jd);
+  const { yearPillarId, monthPillarId } = datePillarIds(jd, rule);
   return {
     jd,
     solar,
     lunar: { year: lunar.year, month: lunar.month, day: lunar.day, isLeap: lunar.isLeap },
-    gapja: pillarIds(solar.year, solar.month, solar.day, jd),
+    gapja: { yearPillarId, monthPillarId, dayPillarId: dayPillarIdOfJd(jd) },
   };
 }
 

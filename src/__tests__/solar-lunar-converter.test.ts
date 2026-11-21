@@ -20,7 +20,7 @@ describe('solarToLunar', () => {
     expect(result.gapja.yearPillarHanja).toBe('甲辰');
   });
 
-  test('1984년 입춘 이후 (양력 1984-02-04 → 갑자년 시작)', () => {
+  test('1984년 입춘 전날 (양력 1984-02-04 → 아직 계해년, 1.2.0)', () => {
     const result = solarToLunar(1984, 2, 4);
 
     expect(result.lunar).toEqual({
@@ -29,9 +29,17 @@ describe('solarToLunar', () => {
       day: 3,
       isLeapMonth: false,
     });
-    // 입춘 이후부터 갑자년으로 변경
+    // 1984년 입춘은 2월 5일 00:19(한국천문연구원). 1.1.0은 2/4 고정이라 갑자년을 주었다
+    expect(result.gapja.yearPillar).toBe('계해');
+    expect(result.sajuBoundary).toBeNull();
+  });
+
+  test('1984년 입춘 (양력 1984-02-05 → 갑자년 시작)', () => {
+    const result = solarToLunar(1984, 2, 5);
     expect(result.gapja.yearPillar).toBe('갑자');
     expect(result.gapja.yearPillarHanja).toBe('甲子');
+    expect(result.sajuBoundary?.at).toEqual({ year: 1984, month: 2, day: 5, hour: 0, minute: 19 });
+    expect(result.sajuBoundary?.chosen).toBe('after');
   });
 
   test('1984년 입춘 이전 (양력 1984-02-02 → 아직 계해년)', () => {
@@ -140,8 +148,8 @@ describe('lunarToSolar', () => {
 });
 
 describe('getGapja', () => {
-  test('1984년 입춘 (갑자년 시작)', () => {
-    const gapja = getGapja(1984, 2, 4);
+  test('1984년 입춘 (갑자년 시작, 1984-02-05 00:19)', () => {
+    const gapja = getGapja(1984, 2, 5);
 
     expect(gapja.yearPillar).toBe('갑자');
     expect(gapja.yearPillarHanja).toBe('甲子');
@@ -174,7 +182,7 @@ describe('getGapja', () => {
 describe('월주 절기 기준 검증 (Issue #5)', () => {
   describe('1996년(丙子年) 전체 월 순환', () => {
     const cases = [
-      { date: [1996, 2, 4], expected: '庚寅', desc: '인월 (입춘)' },
+      { date: [1996, 2, 5], expected: '庚寅', desc: '인월 (입춘 2/4 22:08 다음 날)' },
       { date: [1996, 3, 6], expected: '辛卯', desc: '묘월 (경칩)' },
       { date: [1996, 4, 5], expected: '壬辰', desc: '진월 (청명)' },
       { date: [1996, 5, 6], expected: '癸巳', desc: '사월 (입하)' },
@@ -208,8 +216,10 @@ describe('월주 절기 기준 검증 (Issue #5)', () => {
       expect(getGapja(1996, 2, 3).monthPillarHanja).toBe('己丑');
     });
 
-    test('입춘 당일 (1996-02-04) → 인월 庚寅', () => {
-      expect(getGapja(1996, 2, 4).monthPillarHanja).toBe('庚寅');
+    test('입춘 당일 (1996-02-04, 입춘 22:08) → 정오는 아직 축월 己丑, 하루 끝 규칙이면 庚寅', () => {
+      expect(getGapja(1996, 2, 4).monthPillarHanja).toBe('己丑');
+      expect(getGapja(1996, 2, 4, { boundaryRule: 'day-end' }).monthPillarHanja).toBe('庚寅');
+      expect(getGapja(1996, 2, 4, { boundaryRule: 'legacy-fixed' }).monthPillarHanja).toBe('庚寅');
     });
 
     test('청명 전 (1996-04-04) → 묘월 辛卯', () => {
@@ -223,8 +233,9 @@ describe('월주 절기 기준 검증 (Issue #5)', () => {
 
   describe('오호둔법 연간별 검증', () => {
     // 갑/기년 → 병인(丙寅) 시작
-    test('2024 갑진년 인월 → 丙寅', () => {
-      expect(getGapja(2024, 2, 4).monthPillarHanja).toBe('丙寅');
+    test('2024 갑진년 인월 → 丙寅 (입춘 2/4 17:27)', () => {
+      expect(getGapja(2024, 2, 5).monthPillarHanja).toBe('丙寅');
+      expect(getGapja(2024, 2, 4).monthPillarHanja).toBe('乙丑');
     });
 
     // 을/경년 → 무인(戊寅) 시작
@@ -234,7 +245,7 @@ describe('월주 절기 기준 검증 (Issue #5)', () => {
 
     // 병/신년 → 경인(庚寅) 시작
     test('1996 병자년 인월 → 庚寅', () => {
-      expect(getGapja(1996, 2, 4).monthPillarHanja).toBe('庚寅');
+      expect(getGapja(1996, 2, 5).monthPillarHanja).toBe('庚寅');
     });
 
     // 정/임년 → 임인(壬寅) 시작

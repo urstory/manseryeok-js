@@ -5,8 +5,9 @@
  */
 
 import { SOLAR_TERM_NAMES } from '../data/solar-terms';
-import { SOLAR_TERMS_DATA, SUPPORTED_SOLAR_TERM_YEARS } from '../data/solar-terms-data';
-import type { SolarTermDateTime } from '../types';
+import { solarFromJd } from '../data/date-index';
+import { isSupportedYear } from '../utils/range';
+import { allTerms, kOfIndex, kstOfMinute, nameIndexOfK } from './terms';
 
 /**
  * 절기 시각 정보 (날짜 포함)
@@ -66,128 +67,107 @@ export function getSolarTermsBySajuMonth(sajuMonth: number): typeof SOLAR_TERM_N
   return SOLAR_TERM_NAMES.filter(term => term.sajuMonth === sajuMonth);
 }
 
+/** 절입 순간(UTC 분)과 절기 번호 k → 한국 시각(고정 UTC+9) 날짜·시각의 절기 정보 */
+export function termWithDateOf(t: number, k: number): SolarTermWithDate {
+  const idx = nameIndexOfK(k);
+  const base = SOLAR_TERM_NAMES[idx];
+  const { jd, minuteOfDay } = kstOfMinute(t);
+  const d = solarFromJd(jd);
+  return {
+    name: base.name,
+    nameHanja: base.hanja,
+    index: idx,
+    longitude: base.longitude,
+    type: base.type,
+    sajuMonth: base.sajuMonth,
+    year: d.year,
+    month: d.month,
+    day: d.day,
+    hour: Math.floor(minuteOfDay / 60),
+    minute: minuteOfDay % 60,
+  };
+}
+
+let _byYear: Map<number, SolarTermWithDate[]> | null = null;
+
+/** 라이브러리 날짜(한국 시각 고정 UTC+9)의 해로 묶은 절기 목록. 지원 범위(1391~2050) 밖이면 undefined */
+export function termsOfYear(year: number): SolarTermWithDate[] | undefined {
+  if (!Number.isInteger(year) || !isSupportedYear(year)) return undefined;
+  if (!_byYear) {
+    const map = new Map<number, SolarTermWithDate[]>();
+    const all = allTerms();
+    for (let i = 0; i < all.length; i++) {
+      const term = termWithDateOf(all[i], kOfIndex(i));
+      if (!isSupportedYear(term.year)) continue;
+      const list = map.get(term.year);
+      if (list) list.push(term);
+      else map.set(term.year, [term]);
+    }
+    _byYear = map;
+  }
+  return _byYear.get(year);
+}
+
 /**
  * 특정 연도의 모든 절기 조회 (시각 포함)
- * @param year 연도 (2020~2030)
- * @returns 해당 연도의 24절기 시각 정보
+ *
+ * 값은 절입 시각 표에서 낸 한국 시각(고정 UTC+9)의 월·일·시·분이다(1.2.0부터 실제 값).
+ * 해는 절입 순간을 라이브러리 날짜로 옮긴 해로 묶는다. 그래서 1391~1581년(율리우스력)은 대한부터 다음 소한까지 24개,
+ * 1582년은 10월 5~14일이 없어 23개다.
+ * @param year 연도 (1391~2050)
+ * @returns 해당 연도의 절기 시각 정보(시간 차례)
  */
 export function getSolarTermsByYear(year: number): SolarTermWithDate[] {
-  if (!SOLAR_TERMS_DATA[year]) {
-    throw new Error(`No solar terms data for year ${year}. Supported years: ${SUPPORTED_SOLAR_TERM_YEARS.join(', ')}`);
+  const list = termsOfYear(year);
+  if (!list) {
+    throw new Error(`No solar terms data for year ${year}. Supported years: 1391~2050`);
   }
-
-  const yearData = SOLAR_TERMS_DATA[year];
-  const result: SolarTermWithDate[] = [];
-
-  yearData.forEach((termData, i) => {
-    // 절기 이름으로 기본 정보 찾기
-    const baseInfo = SOLAR_TERM_NAMES.find(t => t.name === termData.name);
-    if (!baseInfo) return;
-
-    result.push({
-      name: baseInfo.name,
-      nameHanja: baseInfo.hanja,
-      index: SOLAR_TERM_NAMES.indexOf(baseInfo),
-      longitude: baseInfo.longitude,
-      type: baseInfo.type,
-      sajuMonth: baseInfo.sajuMonth,
-      year,
-      month: termData.month,
-      day: termData.day,
-      hour: termData.hour,
-      minute: termData.minute,
-    });
-  });
-
-  return result;
+  return list.map((t) => ({ ...t }));
 }
 
 /**
  * 특정 날짜의 절기 조회 (±1일 이내)
- * @param year 연도
+ * @param year 연도 (1391~2050)
  * @param month 월 (1~12)
  * @param day 일 (1~31)
  * @returns 해당 날짜의 절기 정보 또는 null
  */
 export function getSolarTermForDate(year: number, month: number, day: number): SolarTermWithDate | null {
-  if (!SOLAR_TERMS_DATA[year]) {
-    return null;
+  const list = termsOfYear(year);
+  if (!list) return null;
+  for (const term of list) {
+    if (term.month === month && Math.abs(term.day - day) <= 1) return { ...term };
   }
-
-  const yearData = SOLAR_TERMS_DATA[year];
-
-  for (const termData of yearData) {
-    if (termData.month === month && Math.abs(termData.day - day) <= 1) {
-      const baseInfo = SOLAR_TERM_NAMES.find(t => t.name === termData.name);
-      if (!baseInfo) continue;
-
-      return {
-        name: baseInfo.name,
-        nameHanja: baseInfo.hanja,
-        index: SOLAR_TERM_NAMES.indexOf(baseInfo),
-        longitude: baseInfo.longitude,
-        type: baseInfo.type,
-        sajuMonth: baseInfo.sajuMonth,
-        year,
-        month: termData.month,
-        day: termData.day,
-        hour: termData.hour,
-        minute: termData.minute,
-      };
-    }
-  }
-
   return null;
 }
 
 /**
  * 특정 월의 모든 절기 조회
- * @param year 연도
+ * @param year 연도 (1391~2050)
  * @param month 월 (1~12)
  * @returns 해당 월의 절기 목록
  */
 export function getSolarTermsByMonth(year: number, month: number): SolarTermWithDate[] {
-  if (!SOLAR_TERMS_DATA[year]) {
-    return [];
-  }
-
-  const yearData = SOLAR_TERMS_DATA[year];
-  const result: SolarTermWithDate[] = [];
-
-  yearData.forEach((termData) => {
-    if (termData.month !== month) return;
-
-    const baseInfo = SOLAR_TERM_NAMES.find(t => t.name === termData.name);
-    if (!baseInfo) return;
-
-    result.push({
-      name: baseInfo.name,
-      nameHanja: baseInfo.hanja,
-      index: SOLAR_TERM_NAMES.indexOf(baseInfo),
-      longitude: baseInfo.longitude,
-      type: baseInfo.type,
-      sajuMonth: baseInfo.sajuMonth,
-      year,
-      month: termData.month,
-      day: termData.day,
-      hour: termData.hour,
-      minute: termData.minute,
-    });
-  });
-
-  return result;
+  const list = termsOfYear(year);
+  if (!list) return [];
+  return list.filter((t) => t.month === month).map((t) => ({ ...t }));
 }
 
 /**
  * 지원되는 절기 연도 목록 조회
- * @returns 지원되는 연도 배열
+ * @returns 지원되는 연도 배열 (1391~2050)
  */
 export function getSupportedSolarTermYears(): number[] {
-  return [...SUPPORTED_SOLAR_TERM_YEARS];
+  const years: number[] = [];
+  for (let y = 1391; y <= 2050; y++) years.push(y);
+  return years;
 }
 
 /**
- * 현재 날짜가 속한 사주 월 계산
+ * 현재 날짜가 속한 사주 월 계산 (대략값)
+ *
+ * @deprecated 해를 받지 않아 양력 고정 날짜(1/6·2/4·3/6…)로 셈하는 대략값입니다(1.1.0과 같은 값).
+ * 실제 절입 시각으로 셈하려면 `getSajuMonthAt(year, month, day, hour?, minute?)`을 쓰세요.
  *
  * @description
  * 사주에서 월주는 절기(節氣)를 기준으로 계산합니다.
@@ -227,7 +207,10 @@ export function getSajuMonth(month: number, day: number): number {
 }
 
 /**
- * 입춘 이전인지 확인 (년주 결정에 사용)
+ * 입춘 이전인지 확인 (대략값)
+ *
+ * @deprecated 해를 받지 않아 2월 4일 고정으로 셈하는 대략값입니다(1.1.0과 같은 값).
+ * 그 해의 실제 입춘은 `getIpchun(year)`으로 구하세요.
  * @param month 양력 월
  * @param day 양력 일
  * @returns 입춘 이전이면 true

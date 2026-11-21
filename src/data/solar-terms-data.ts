@@ -1,301 +1,63 @@
 /**
- * 연도별 절기(절기시각) 데이터
+ * 연도별 절기(절기시각) 데이터 — 1.2.0부터 절입 시각 표에서 만든다
  *
- * 한국천문연구원(KASI) 데이터 기반
- * 현재 2020~2030년 데이터 포함
+ * 1.1.0까지는 2020~2030년만 있었고 해마다 같은(틀린) 값이었다.
+ * 지금은 1391~2050년, 한국 시각(고정 UTC+9)의 월·일·시·분이다(출처는 data/terms/README.md).
  */
 
-import type { SolarTermDateTime } from'../types';
+import type { SolarTermDateTime } from '../types';
+import { termsOfYear } from '../core/solar-term';
 
-export const SOLAR_TERMS_DATA: Record<number, SolarTermDateTime[]> = {
-  2020: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2021: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2022: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2023: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2024: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2025: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2026: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2027: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2028: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2029: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-  2030: [
-    { name: '소한', month: 1, day: 5, hour: 17, minute: 23 },
-    { name: '대한', month: 1, day: 20, hour: 10, minute: 44 },
-    { name: '입춘', month: 2, day: 4, hour: 5, minute: 2 },
-    { name: '우수', month: 2, day: 19, hour: 0, minute: 51 },
-    { name: '경칩', month: 3, day: 5, hour: 22, minute: 58 },
-    { name: '춘분', month: 3, day: 20, hour: 23, minute: 45 },
-    { name: '청명', month: 4, day: 5, hour: 3, minute: 39 },
-    { name: '곡우', month: 4, day: 20, hour: 10, minute: 39 },
-    { name: '입하', month: 5, day: 5, hour: 20, minute: 48 },
-    { name: '소만', month: 5, day: 21, hour: 9, minute: 36 },
-    { name: '망종', month: 6, day: 6, hour: 0, minute: 48 },
-    { name: '하지', month: 6, day: 21, hour: 17, minute: 24 },
-    { name: '소서', month: 7, day: 7, hour: 10, minute: 56 },
-    { name: '대서', month: 7, day: 23, hour: 4, minute: 13 },
-    { name: '입추', month: 8, day: 7, hour: 20, minute: 42 },
-    { name: '처서', month: 8, day: 23, hour: 11, minute: 18 },
-    { name: '백로', month: 9, day: 7, hour: 23, minute: 41 },
-    { name: '추분', month: 9, day: 23, hour: 9, minute: 5 },
-    { name: '한로', month: 10, day: 8, hour: 15, minute: 29 },
-    { name: '상강', month: 10, day: 23, hour: 18, minute: 37 },
-    { name: '입동', month: 11, day: 7, hour: 18, minute: 52 },
-    { name: '소설', month: 11, day: 22, hour: 16, minute: 23 },
-    { name: '대설', month: 12, day: 7, hour: 11, minute: 52 },
-    { name: '동지', month: 12, day: 22, hour: 5, minute: 50 },
-  ],
-};
+const FIRST = 1391;
+const LAST = 2050;
 
-export const SUPPORTED_SOLAR_TERM_YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030] as const;
+function yearOfKey(prop: string | symbol): number | undefined {
+  if (typeof prop !== 'string' || !/^\d{4}$/.test(prop)) return undefined;
+  const y = Number(prop);
+  return y >= FIRST && y <= LAST ? y : undefined;
+}
 
-export type SupportedSolarTermYear = typeof SUPPORTED_SOLAR_TERM_YEARS[number];
+const _cache = new Map<number, SolarTermDateTime[]>();
+
+function dataOfYear(year: number): SolarTermDateTime[] {
+  let v = _cache.get(year);
+  if (!v) {
+    v = (termsOfYear(year) ?? []).map((t) => ({ name: t.name, month: t.month, day: t.day, hour: t.hour, minute: t.minute }));
+    _cache.set(year, v);
+  }
+  return v;
+}
+
+/**
+ * 연도별 절기 시각 (1391~2050). 처음 읽을 때 그 해만 만든다.
+ *
+ * @deprecated `getSolarTermsByYear(year)`를 쓰세요. 이 객체는 1.x 동안 같은 꼴로 남겨 둡니다.
+ */
+export const SOLAR_TERMS_DATA: Record<number, SolarTermDateTime[]> = new Proxy({} as Record<number, SolarTermDateTime[]>, {
+  get(target, prop) {
+    const y = yearOfKey(prop);
+    if (y !== undefined) return dataOfYear(y);
+    return Reflect.get(target, prop);
+  },
+  has(target, prop) {
+    return yearOfKey(prop) !== undefined || Reflect.has(target, prop);
+  },
+  ownKeys() {
+    const keys: string[] = [];
+    for (let y = FIRST; y <= LAST; y++) keys.push(String(y));
+    return keys;
+  },
+  getOwnPropertyDescriptor(target, prop) {
+    const y = yearOfKey(prop);
+    if (y !== undefined) return { value: dataOfYear(y), enumerable: true, configurable: true, writable: false };
+    return Reflect.getOwnPropertyDescriptor(target, prop);
+  },
+});
+
+/** 절기 시각을 지원하는 연도(1391~2050) */
+export const SUPPORTED_SOLAR_TERM_YEARS: readonly number[] = Object.freeze(
+  Array.from({ length: LAST - FIRST + 1 }, (_, i) => FIRST + i)
+);
+
+/** 절기 시각을 지원하는 연도의 타입(1.2.0부터 number) */
+export type SupportedSolarTermYear = number;

@@ -4,8 +4,10 @@
  * 사주팔자(년주, 월주, 일주, 시주)를 계산합니다.
  */
 
-import { getGapja } from './solar-lunar-converter';
-import type { GapjaResult } from '../types';
+import { solarToLunar } from './solar-lunar-converter';
+import { formatGapjaByIds } from './gapja-calculator';
+import { checkBoundaryRule, momentPillars, requireJd } from './saju-boundary';
+import type { BoundaryRule, ClockNotice, ClockOption, GapjaResult, SajuBoundary } from '../types';
 
 /**
  * 사주팔자 타입
@@ -33,6 +35,15 @@ export interface SajuResult {
   isTimeCorrected: boolean;
   /** 보정된 시간 (분 단위) */
   correctedTime?: { hour: number; minute: number };
+  /**
+   * 1.2.0: 그날 드는 절(12절)의 경계 정보. 없으면 null.
+   * 시각을 주면 chosen은 시각으로 정한 쪽, 주지 않으면 boundaryRule대로 실린 쪽이다.
+   */
+  sajuBoundary: SajuBoundary | null;
+  /** 1.2.0: 입력 시각이 절입에서 uncertainMinutes 안이면 true(값은 그래도 견준 대로). 시각을 주지 않으면 false */
+  nearBoundary: boolean;
+  /** 1.2.0: 시계 알림(기본 'kst-fixed'로 셈했는데 그때 한국 법정 시계가 UTC+9가 아니었던 경우 등). 시각을 주지 않으면 null */
+  clockNotice: ClockNotice | null;
 }
 
 /**
@@ -43,6 +54,15 @@ export interface SajuOptions {
   longitude?: number;
   /** 시간 보정 적용 여부 (기본값: true) */
   applyTimeCorrection?: boolean;
+  /**
+   * 1.2.0: 시를 주지 않았을 때 절입일의 연주·월주를 어느 쪽으로 낼지(기본 'noon').
+   * 시를 주면 절입 시각과 견주므로 쓰지 않는다. 단 'legacy-fixed'는 시를 주어도 1.1.0과 같게 고정 날짜로 낸다.
+   */
+  boundaryRule?: BoundaryRule;
+  /** 1.2.0: 입력 시각을 읽는 시계(기본 'kst-fixed' = 언제나 UTC+9) */
+  clock?: ClockOption;
+  /** 1.2.0: 서머타임이 끝나며 두 번 지나간 시각에서 0 = 앞의 것(기본), 1 = 뒤의 것 */
+  fold?: 0 | 1;
 }
 
 /**
@@ -68,9 +88,33 @@ export function calculateSaju(
     longitude = 127,
     applyTimeCorrection = true,
   } = options;
+  const rule = checkBoundaryRule(options.boundaryRule);
+  const clock = options.clock ?? 'kst-fixed';
 
   // 갑자 계산 (년주, 월주, 일주)
-  const gapja = getGapja(solarYear, solarMonth, solarDay);
+  // 시를 주지 않으면 날짜만 받는 함수와 같다(boundaryRule대로). 시를 주면 절입 시각과 견준다.
+  const day = solarToLunar(solarYear, solarMonth, solarDay, { boundaryRule: rule });
+  let gapja: GapjaResult = day.gapja;
+  let sajuBoundary: SajuBoundary | null = day.sajuBoundary;
+  let nearBoundary = false;
+  let clockNotice: ClockNotice | null = null;
+  let offsetMinutes = 540;
+  if (solarHour !== undefined) {
+    const jd = requireJd(solarYear, solarMonth, solarDay);
+    const m = momentPillars(jd, solarHour, solarMinute, { clock, fold: options.fold }, rule === 'legacy-fixed');
+    const ids = formatGapjaByIds(m.yearPillarId, m.monthPillarId, 0);
+    gapja = {
+      ...day.gapja,
+      yearPillar: ids.yearPillar,
+      yearPillarHanja: ids.yearPillarHanja,
+      monthPillar: ids.monthPillar,
+      monthPillarHanja: ids.monthPillarHanja,
+    };
+    sajuBoundary = m.sajuBoundary;
+    nearBoundary = m.nearBoundary;
+    clockNotice = m.clockNotice;
+    offsetMinutes = m.offsetSec / 60;
+  }
 
   // 시주 계산
   let hourPillar: string | null = null;
@@ -83,7 +127,8 @@ export function calculateSaju(
     let calcMinute = solarMinute;
 
     // 시간 보정 (진태양시)
-    if (applyTimeCorrection) {
+    if (applyTimeCorrection && clock === 'kst-fixed') {
+      // 1.1.0과 같은 셈(바꾸지 않는다)
       const standardMeridian = 135; // 한국 표준시 자오선 (UTC+9)
       const degreesDiff = standardMeridian - longitude;
       const longitudeCorrection = Math.round(degreesDiff * 4); // 1도 = 4분
@@ -99,6 +144,17 @@ export function calculateSaju(
         calcHour += 24;
       }
 
+      if (longitudeCorrection !== 0) {
+        isTimeCorrected = true;
+        correctedTime = { hour: calcHour, minute: calcMinute };
+      }
+    } else if (applyTimeCorrection) {
+      // 1.2.0: 'korea-legal'·{ utcOffsetMinutes }는 입력을 읽은 시계의 자오선(UTC 차이 ÷ 4분)을 기준으로 한다.
+      // 서머타임이면 그 시계의 자오선이 15도 동쪽에 있는 셈이다.
+      const longitudeCorrection = Math.round((offsetMinutes / 4 - longitude) * 4);
+      const total = (((solarHour * 60 + solarMinute - longitudeCorrection) % 1440) + 1440) % 1440;
+      calcHour = Math.floor(total / 60);
+      calcMinute = total % 60;
       if (longitudeCorrection !== 0) {
         isTimeCorrected = true;
         correctedTime = { hour: calcHour, minute: calcMinute };
@@ -139,6 +195,9 @@ export function calculateSaju(
     gapja,
     isTimeCorrected,
     correctedTime,
+    sajuBoundary,
+    nearBoundary,
+    clockNotice,
   };
 }
 

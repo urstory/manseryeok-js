@@ -67,7 +67,19 @@ export {
   isBeforeLichun,
 } from './core/solar-term';
 export { SOLAR_TERM_NAMES } from './data/solar-terms';
-export { SOLAR_TERMS_DATA, SUPPORTED_SOLAR_TERM_YEARS } from './data/solar-terms-data';
+
+// ============================================
+// 1.2.0: 절입 시각 경계
+// ============================================
+export {
+  getGapjaAt,
+  getSajuBoundary,
+  getJeolAround,
+  getIpchun,
+  getSajuMonthAt,
+  type GapjaAtResult,
+} from './core/saju-boundary';
+export { SOLAR_TERMS_DATA, SUPPORTED_SOLAR_TERM_YEARS, type SupportedSolarTermYear } from './data/solar-terms-data';
 export type { SolarTermWithDate } from './core/solar-term';
 
 // ============================================
