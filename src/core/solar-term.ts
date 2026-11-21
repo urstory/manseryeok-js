@@ -18,6 +18,11 @@ export interface SolarTermWithDate {
   index: number;
   longitude: number;
   type: 'jeolgi' | 'junggi';
+  /**
+   * 이 절기가 속한 달 번호(SOLAR_TERM_NAMES와 같음 — 소한·대한 1, 입춘·우수 2 … 대설·동지 12).
+   * getSajuMonthAt·getSajuMonth의 사주 월(1 = 인월 … 12 = 축월)과 번호가 다르다:
+   * getSajuMonthAt = sajuMonth − 1 (0이면 12)
+   */
   sajuMonth: number;
   year: number;
   month: number;

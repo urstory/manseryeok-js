@@ -27,7 +27,7 @@ import type {
   TimeOptions,
 } from '../types';
 import { formatGapjaByIds } from './gapja-calculator';
-import { checkClock, legalOffsetAt, readWallClock } from './clock';
+import { checkClock, checkFold, legalOffsetAt, readWallClock } from './clock';
 import {
   EPOCH_JD,
   gregorianYearOfMinute,
@@ -64,6 +64,11 @@ function requireTime(hour: number, minute: number): void {
   if (!Number.isInteger(hour) || hour < 0 || hour > 23 || !Number.isInteger(minute) || minute < 0 || minute > 59) {
     throw new InvalidDateError(`Invalid time: ${hour}:${minute}`);
   }
+}
+
+/** 선택 인자가 객체가 아니면(null 등) 빈 객체로 */
+export function normalizeOptions<T extends object>(options: T | null | undefined): Partial<T> {
+  return options !== null && typeof options === 'object' ? options : {};
 }
 
 export function checkBoundaryRule(rule: BoundaryRule | undefined): BoundaryRule {
@@ -124,7 +129,10 @@ export function boundaryOfJeol(jeol: Jeol, chosen: 'before' | 'after'): SajuBoun
   };
 }
 
-/** legacy-fixed의 값이 경계의 어느 쪽과 같은가(어느 쪽과도 다르면 'before') */
+/**
+ * legacy-fixed의 값이 경계의 어느 쪽과 같은가.
+ * 어느 쪽과도 다르면 'before'로 두지만, 1391~2050년 전수로 확인한 결과 그런 날은 없다(방어용).
+ */
 function chosenOfIds(jeol: Jeol, ids: { yearPillarId: number; monthPillarId: number }): 'before' | 'after' {
   const a = pillarIdsAtMinute(jeol.t);
   return a && a.yearPillarId === ids.yearPillarId && a.monthPillarId === ids.monthPillarId ? 'after' : 'before';
@@ -152,6 +160,11 @@ export interface MomentResult {
   x: number;
   /** 읽는 데 쓴 UTC 차이(초) */
   offsetSec: number;
+  /**
+   * 일주를 정하는 날짜(JD). 입력 날짜와 같다. 다만 'korea-legal'로 읽은 시계가 서머타임이면
+   * 벽시계에서 1시간 뺀 표준시의 날짜다(서머타임 0시대는 하루 전).
+   */
+  dayJd: number;
   yearPillarId: number;
   monthPillarId: number;
   sajuMonth: number;
@@ -165,9 +178,14 @@ export interface MomentResult {
  * legacy가 참이면 연주·월주는 1.1.0의 고정 날짜 규칙(시각을 보지 않음)으로 낸다.
  */
 export function momentPillars(jd: number, hour: number, minute: number, options: TimeOptions = {}, legacy = false): MomentResult {
-  checkClock(options.clock);
-  const localSec = (jd - EPOCH_JD) * 86400 + hour * 3600 + minute * 60;
-  const reading = readWallClock(localSec, options.clock ?? 'kst-fixed', options.fold ?? 0);
+  const opts = normalizeOptions(options);
+  checkClock(opts.clock);
+  const fold = checkFold(opts.fold);
+  const clock = opts.clock ?? 'kst-fixed';
+  const dayStartSec = (jd - EPOCH_JD) * 86400;
+  const localSec = dayStartSec + hour * 3600 + minute * 60;
+  const reading = readWallClock(localSec, clock, fold);
+  const dayJd = clock === 'korea-legal' && reading.dst ? EPOCH_JD + Math.floor((localSec - 3600) / 86400) : jd;
   const x = reading.utcSec / 60;
   const exact = pillarIdsAtMinute(x);
   if (!exact) throw new RangeError('No solar term data for this moment');
@@ -177,12 +195,20 @@ export function momentPillars(jd: number, hour: number, minute: number, options:
     ids = legacyPillarIds(s.year, s.month, s.day);
   }
 
-  // 경계: 입력 날짜와 그 순간의 한국 시각 날짜에 드는 절 가운데 가까운 것
+  // 경계: 입력 날짜(고정 UTC+9 달력), 입력 시계의 달력으로 본 입력 날짜 하루, 그 순간의 한국 시각 날짜에
+  // 드는 절 가운데 입력 시각에 가까운 것
   const cands: Jeol[] = [];
-  const j1 = jeolOnKstDay(jd);
-  if (j1) cands.push(j1);
-  const j2 = jeolOnKstDay(kstOfMinute(Math.floor(x)).jd);
-  if (j2 && (!j1 || j2.j !== j1.j)) cands.push(j2);
+  const add = (j: Jeol | undefined) => {
+    if (j && !cands.some((c) => c.j === j.j)) cands.push(j);
+  };
+  add(jeolOnKstDay(jd));
+  {
+    const lo = (dayStartSec - reading.offsetSec) / 60;
+    const hi = (dayStartSec + 86400 - reading.offsetSec) / 60;
+    const j3 = jeolAtOrBefore(hi - 1e-6);
+    if (j3 && j3.t >= lo) add(j3);
+  }
+  add(jeolOnKstDay(kstOfMinute(Math.floor(x)).jd));
   cands.sort((p, q) => Math.abs(p.t - x) - Math.abs(q.t - x));
   const jeol = cands[0];
   const sajuBoundary = jeol
@@ -200,6 +226,7 @@ export function momentPillars(jd: number, hour: number, minute: number, options:
     jd,
     x,
     offsetSec: reading.offsetSec,
+    dayJd,
     yearPillarId: ids.yearPillarId,
     monthPillarId: ids.monthPillarId,
     sajuMonth: ids.sajuMonth,
@@ -215,7 +242,10 @@ export function momentPillars(jd: number, hour: number, minute: number, options:
 
 /** getGapjaAt의 결과 */
 export type GapjaAtResult = GapjaResult & {
-  /** 그날(또는 그 순간의 한국 시각 날짜)에 드는 절의 경계. chosen은 시각으로 정한 쪽 */
+  /**
+   * 입력 날짜(고정 UTC+9 달력 또는 입력 시계의 달력)나 그 순간의 한국 시각 날짜에 드는 절 가운데
+   * 입력 시각에 가까운 것의 경계. chosen은 시각으로 정한 쪽
+   */
   sajuBoundary: SajuBoundary | null;
   /** 입력 시각이 절입에서 uncertainMinutes 안이면 true(값은 그래도 견준 대로 낸다) */
   nearBoundary: boolean;
@@ -226,7 +256,7 @@ export type GapjaAtResult = GapjaResult & {
 /**
  * 시각까지 주고 연주·월주·일주를 구한다(시주 없음) — 1.2.0
  *
- * 연주·월주는 입력 시각을 절대 시각으로 바꿔 절입 시각과 견줘 정한다. 일주는 입력 날짜의 일진이다.
+ * 연주·월주는 입력 시각을 절대 시각으로 바꿔 절입 시각과 견줘 정한다. 일주는 입력 날짜의 일진이다(다만 korea-legal로 읽은 시계가 서머타임이면 1시간 뺀 표준시의 날짜 — 서머타임 0시대는 하루 전).
  * @param year 양력 년(1391~2050, 1582-10-15 전은 율리우스력 날짜)
  * @param month 양력 월(1~12)
  * @param day 양력 일
@@ -246,9 +276,9 @@ export function getGapjaAt(
 ): GapjaAtResult {
   const jd = requireJd(year, month, day);
   requireTime(hour, minute);
-  const r = momentPillars(jd, hour, minute, options);
+  const r = momentPillars(jd, hour, minute, normalizeOptions(options));
   return {
-    ...formatGapjaByIds(r.yearPillarId, r.monthPillarId, mod(jd - DAY_PILLAR_EPOCH, 60)),
+    ...formatGapjaByIds(r.yearPillarId, r.monthPillarId, mod(r.dayJd - DAY_PILLAR_EPOCH, 60)),
     sajuBoundary: r.sajuBoundary,
     nearBoundary: r.nearBoundary,
     clockNotice: r.clockNotice,
@@ -279,7 +309,7 @@ export function getJeolAround(
 ): { prev: SolarTermWithDate; next: SolarTermWithDate } {
   const jd = requireJd(year, month, day);
   requireTime(hour, minute);
-  const r = momentPillars(jd, hour, minute, options);
+  const r = momentPillars(jd, hour, minute, normalizeOptions(options));
   const prev = jeolAtOrBefore(r.x);
   const next = prev ? jeolAt(prev.j + 1) : undefined;
   if (!prev || !next) throw new RangeError('No solar term data around this moment');
@@ -313,8 +343,9 @@ export function getSajuMonthAt(
   options: BoundaryOptions & TimeOptions = {}
 ): number {
   const jd = requireJd(year, month, day);
-  const rule = checkBoundaryRule(options.boundaryRule);
+  const opts = normalizeOptions(options);
+  const rule = checkBoundaryRule(opts.boundaryRule);
   if (hour === undefined || hour === null) return datePillarIds(jd, rule).sajuMonth;
   requireTime(hour, minute);
-  return momentPillars(jd, hour, minute, options, rule === 'legacy-fixed').sajuMonth;
+  return momentPillars(jd, hour, minute, opts, rule === 'legacy-fixed').sajuMonth;
 }

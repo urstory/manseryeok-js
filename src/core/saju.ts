@@ -6,8 +6,12 @@
 
 import { solarToLunar } from './solar-lunar-converter';
 import { formatGapjaByIds } from './gapja-calculator';
-import { checkBoundaryRule, momentPillars, requireJd } from './saju-boundary';
+import { checkBoundaryRule, momentPillars, normalizeOptions, requireJd } from './saju-boundary';
+import { getPillarById } from '../data/sixty-pillars';
+import { InvalidDateError } from '../types';
 import type { BoundaryRule, ClockNotice, ClockOption, GapjaResult, SajuBoundary } from '../types';
+
+const DAY_PILLAR_EPOCH = 2415011;
 
 /**
  * 사주팔자 타입
@@ -50,7 +54,7 @@ export interface SajuResult {
  * 사주 계산 옵션
  */
 export interface SajuOptions {
-  /** 경도 (기본값: 127 - 서울) */
+  /** 경도 (기본값: 127 - 서울). clock이 { utcOffsetMinutes }이면 longitude를 함께 줄 때만 경도 보정을 한다(1.2.0) */
   longitude?: number;
   /** 시간 보정 적용 여부 (기본값: true) */
   applyTimeCorrection?: boolean;
@@ -71,7 +75,8 @@ export interface SajuOptions {
  * @param solarYear 양력 년
  * @param solarMonth 양력 월 (1~12)
  * @param solarDay 양력 일 (1~31)
- * @param solarHour 양력 시 (0~23)
+ * @param solarHour 양력 시 (0~23). 시를 모르면 undefined를 넘긴다(null은 1.1.0처럼 0시로 읽힌다).
+ *   범위는 검사하지 않는다(1.1.0과 같음). 유한한 수가 아니면(NaN 등) InvalidDateError
  * @param solarMinute 양력 분 (0~59, 기본값: 0)
  * @param options 사주 계산 옵션
  * @returns 사주팔자 정보
@@ -84,12 +89,16 @@ export function calculateSaju(
   solarMinute: number = 0,
   options: SajuOptions = {}
 ): SajuResult {
+  options = normalizeOptions(options);
   const {
     longitude = 127,
     applyTimeCorrection = true,
   } = options;
   const rule = checkBoundaryRule(options.boundaryRule);
   const clock = options.clock ?? 'kst-fixed';
+  if (solarHour !== undefined && (!Number.isFinite(Number(solarHour)) || !Number.isFinite(Number(solarMinute)))) {
+    throw new InvalidDateError(`Invalid time: ${solarHour}:${solarMinute}`);
+  }
 
   // 갑자 계산 (년주, 월주, 일주)
   // 시를 주지 않으면 날짜만 받는 함수와 같다(boundaryRule대로). 시를 주면 절입 시각과 견준다.
@@ -110,6 +119,12 @@ export function calculateSaju(
       monthPillar: ids.monthPillar,
       monthPillarHanja: ids.monthPillarHanja,
     };
+    if (m.dayJd !== jd) {
+      // korea-legal 서머타임: 일주는 1시간 뺀 표준시의 날짜(0시대는 하루 전)
+      const d = getPillarById((((m.dayJd - DAY_PILLAR_EPOCH) % 60) + 60) % 60);
+      gapja.dayPillar = d.combined.hangul;
+      gapja.dayPillarHanja = d.combined.hanja;
+    }
     sajuBoundary = m.sajuBoundary;
     nearBoundary = m.nearBoundary;
     clockNotice = m.clockNotice;
@@ -148,9 +163,10 @@ export function calculateSaju(
         isTimeCorrected = true;
         correctedTime = { hour: calcHour, minute: calcMinute };
       }
-    } else if (applyTimeCorrection) {
+    } else if (applyTimeCorrection && (clock === 'korea-legal' || options.longitude !== undefined)) {
       // 1.2.0: 'korea-legal'·{ utcOffsetMinutes }는 입력을 읽은 시계의 자오선(UTC 차이 ÷ 4분)을 기준으로 한다.
-      // 서머타임이면 그 시계의 자오선이 15도 동쪽에 있는 셈이다.
+      // 서머타임이면 그 시계의 자오선이 15도 동쪽에 있는 셈이라 1시간 더 빠진다.
+      // { utcOffsetMinutes }는 출생지가 한국이 아닐 수 있으므로 longitude를 함께 줄 때만 보정한다.
       const longitudeCorrection = Math.round((offsetMinutes / 4 - longitude) * 4);
       const total = (((solarHour * 60 + solarMinute - longitudeCorrection) % 1440) + 1440) % 1440;
       calcHour = Math.floor(total / 60);

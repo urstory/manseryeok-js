@@ -69,6 +69,13 @@ describe('1.1.0과 전수 견줌', () => {
           // legacy-fixed = 1.1.0
           const legacy = solarToLunar(year, month, day, { boundaryRule: 'legacy-fixed' });
           if (JSON.stringify(legacy.gapja) !== JSON.stringify(o.gapja)) fail(`legacy-fixed가 1.1.0과 다름 ${date}`);
+          if (legacy.sajuBoundary) {
+            const lb = legacy.sajuBoundary;
+            const side = lb.chosen === 'after' ? lb.after : lb.before;
+            if (side.yearPillar !== legacy.gapja.yearPillar || side.monthPillar !== legacy.gapja.monthPillar) {
+              fail(`legacy-fixed의 sajuBoundary[chosen]이 gapja와 다름 ${date}`);
+            }
+          }
 
           // 음력 → 양력도 같다
           const back = lunarToSolar(n.lunar.year, n.lunar.month, n.lunar.day, n.lunar.isLeapMonth);
@@ -130,5 +137,32 @@ describe('1.1.0과 전수 견줌', () => {
     expect([...seenPre].sort()).toEqual([...changedPre].sort());
     // 절(12절)은 한 해에 12개
     expect(boundaries).toBeGreaterThan(7900);
+  });
+});
+
+describe('calculateSaju(시각 포함)와 1.1.0 — 1900~2050 사흘 간격 × 시각 11개', () => {
+  test('기본은 일주·시주·시간 보정이 같고, legacy-fixed는 네 기둥이 같다', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { calculateSaju } = require('../core/saju');
+    const TIMES: Array<[number, number]> = [[0, 0], [0, 31], [1, 15], [3, 40], [7, 5], [11, 59], [12, 0], [15, 30], [19, 45], [23, 0], [23, 59]];
+    let n = 0;
+    for (let jd = 2415021; jd <= 2470172; jd += 3) {
+      const d = new Date((jd - 2440588) * 86400000);
+      const [y, m, day] = [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()];
+      for (const [h, mi] of TIMES) {
+        const o = OLD.calculateSaju(y, m, day, h, mi);
+        const nw = calculateSaju(y, m, day, h, mi);
+        if (nw.dayPillar !== o.dayPillar || nw.hourPillar !== o.hourPillar ||
+          nw.isTimeCorrected !== o.isTimeCorrected || JSON.stringify(nw.correctedTime) !== JSON.stringify(o.correctedTime)) {
+          throw new Error(`기본이 다름 ${y}-${m}-${day} ${h}:${mi}`);
+        }
+        const lg = calculateSaju(y, m, day, h, mi, { boundaryRule: 'legacy-fixed' });
+        if (lg.yearPillar !== o.yearPillar || lg.monthPillar !== o.monthPillar || lg.dayPillar !== o.dayPillar || lg.hourPillar !== o.hourPillar) {
+          throw new Error(`legacy-fixed가 다름 ${y}-${m}-${day} ${h}:${mi}`);
+        }
+        n++;
+      }
+    }
+    expect(n).toBe(18384 * 11);
   });
 });

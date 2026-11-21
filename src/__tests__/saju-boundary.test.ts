@@ -320,3 +320,134 @@ describe('1.1.0과 같게 남는 것', () => {
     }
   });
 });
+
+describe('검토 반영 (1.2.0-rc.1)', () => {
+  const four = (s: ReturnType<typeof calculateSaju>) =>
+    [s.yearPillar, s.monthPillar, s.dayPillar, s.hourPillar, s.isTimeCorrected, s.correctedTime];
+
+  test('시각 함수의 sajuBoundary: 입력 시계의 달력으로 본 입력 날짜에 드는 절도 후보', () => {
+    const a = getGapjaAt(1954, 12, 7, 12, 0, { clock: 'korea-legal' });
+    expect(a.monthPillar).toBe('을해');
+    expect(a.sajuBoundary?.term.name).toBe('대설');
+    expect(a.sajuBoundary?.at).toEqual({ year: 1954, month: 12, day: 8, hour: 0, minute: 29 });
+    expect(a.sajuBoundary?.atLegalClock).toEqual({ year: 1954, month: 12, day: 7, hour: 23, minute: 59, offsetMinutes: 510 });
+    expect(a.sajuBoundary?.chosen).toBe('before');
+    expect(getGapjaAt(1954, 12, 8, 12, 0, { clock: 'korea-legal' }).sajuBoundary?.chosen).toBe('after');
+  });
+
+  test('B-1: { utcOffsetMinutes }는 longitude를 줄 때만 경도 보정', () => {
+    const ny = calculateSaju(2000, 1, 1, 12, 0, { clock: { utcOffsetMinutes: -300 } });
+    expect(ny.hourPillar).toBe('무오');
+    expect(ny.isTimeCorrected).toBe(false);
+    expect(ny.correctedTime).toBeUndefined();
+    const ny2 = calculateSaju(2000, 1, 1, 12, 0, { clock: { utcOffsetMinutes: -300 }, longitude: -74 });
+    expect(ny2.correctedTime).toEqual({ hour: 12, minute: 4 });
+    expect(ny2.hourPillar).toBe('무오');
+    expect(four(calculateSaju(2000, 1, 1, 12, 0, { clock: { utcOffsetMinutes: 540 }, longitude: 127 })))
+      .toEqual(four(calculateSaju(2000, 1, 1, 12, 0)));
+  });
+
+  test('B-2: korea-legal 서머타임 0시대의 일주는 하루 전', () => {
+    expect(four(calculateSaju(1988, 7, 1, 0, 10, { clock: 'korea-legal' })))
+      .toEqual(['무진', '무오', '병진', '기해', true, { hour: 22, minute: 38 }]);
+    expect(four(calculateSaju(1988, 7, 1, 0, 40, { clock: 'korea-legal' })))
+      .toEqual(['무진', '무오', '병진', '무자', true, { hour: 23, minute: 8 }]);
+    expect(four(calculateSaju(1988, 7, 1, 1, 10, { clock: 'korea-legal' })))
+      .toEqual(['무진', '무오', '정사', '경자', true, { hour: 23, minute: 38 }]);
+    expect(getGapjaAt(1988, 7, 1, 0, 10, { clock: 'korea-legal' }).dayPillar).toBe('병진');
+    expect(getGapjaAt(1988, 7, 1, 0, 10).dayPillar).toBe('정사');
+  });
+
+  /** 서머타임이 하루 종일인 날(전이 날 제외)의 벽시계 시·분 격자 */
+  function dstGrid(from: number, to: number): Array<[number, number, number, number, number]> {
+    const out: Array<[number, number, number, number, number]> = [];
+    for (let i = 0; i + 1 < TZ_SEOUL_TRANSITIONS.length; i++) {
+      const [start, , dst] = TZ_SEOUL_TRANSITIONS[i];
+      const end = TZ_SEOUL_TRANSITIONS[i + 1][0];
+      if (dst !== 1) continue;
+      const y0 = new Date(start * 1000).getUTCFullYear();
+      if (y0 < from || y0 > to) continue;
+      // 전이 다음 날부터 끝나는 전날까지, 이틀 간격
+      for (let t = start + 2 * 86400; t < end - 86400; t += 2 * 86400) {
+        const d = new Date(t * 1000);
+        for (const [h, mi] of [[0, 0], [0, 10], [0, 40], [0, 59], [1, 0], [1, 31], [7, 5], [12, 0], [22, 59], [23, 0], [23, 59]]) {
+          out.push([d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), h, mi]);
+        }
+      }
+    }
+    return out;
+  }
+  const back1h = (y: number, m: number, d: number, h: number, mi: number) => {
+    const t = new Date(Date.UTC(y, m - 1, d, h, mi) - 3600000);
+    return [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate(), t.getUTCHours(), t.getUTCMinutes()] as const;
+  };
+
+  test('불변식 1: 1948~51·1987~88 서머타임 — korea-legal(벽시계) = 기본(벽시계 − 1시간)', () => {
+    const grid = [...dstGrid(1948, 1951), ...dstGrid(1987, 1988)];
+    expect(grid.length).toBeGreaterThan(500);
+    for (const [y, m, d, h, mi] of grid) {
+      const [y2, m2, d2, h2, mi2] = back1h(y, m, d, h, mi);
+      const a = four(calculateSaju(y, m, d, h, mi, { clock: 'korea-legal' }));
+      const b = four(calculateSaju(y2, m2, d2, h2, mi2));
+      if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${y}-${m}-${d} ${h}:${mi}: ${a} / ${b}`);
+    }
+  });
+
+  test('불변식 2: 1955~60 서머타임 — korea-legal(벽시계) = UTC+8:30·경도 127(벽시계 − 1시간)', () => {
+    const grid = dstGrid(1955, 1960);
+    expect(grid.length).toBeGreaterThan(500);
+    for (const [y, m, d, h, mi] of grid) {
+      const [y2, m2, d2, h2, mi2] = back1h(y, m, d, h, mi);
+      const a = four(calculateSaju(y, m, d, h, mi, { clock: 'korea-legal' }));
+      const b = four(calculateSaju(y2, m2, d2, h2, mi2, { clock: { utcOffsetMinutes: 510 }, longitude: 127 }));
+      if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${y}-${m}-${d} ${h}:${mi}: ${a} / ${b}`);
+    }
+  });
+
+  test('C-1: 선택 인자 null은 기본과 같다', () => {
+    expect(solarToLunar(2024, 2, 4, null as never)).toEqual(solarToLunar(2024, 2, 4));
+    expect(lunarToSolar(2023, 12, 25, false, null as never)).toEqual(lunarToSolar(2023, 12, 25));
+    expect(getGapja(2024, 2, 4, null as never)).toEqual(getGapja(2024, 2, 4));
+    expect(calculateSaju(2024, 2, 4, 10, 0, null as never)).toEqual(calculateSaju(2024, 2, 4, 10, 0));
+    expect(getGapjaAt(2024, 2, 4, 10, 0, null as never)).toEqual(getGapjaAt(2024, 2, 4, 10, 0));
+    expect(getJeolAround(2024, 2, 4, 10, 0, null as never)).toEqual(getJeolAround(2024, 2, 4, 10, 0));
+    expect(getSajuMonthAt(2024, 2, 4, 10, 0, null as never)).toBe(getSajuMonthAt(2024, 2, 4, 10, 0));
+  });
+
+  test('C-2: calculateSaju의 NaN 시·분은 InvalidDateError, 범위 밖 정수와 null은 1.1.0처럼', () => {
+    expect(() => calculateSaju(2024, 1, 1, NaN)).toThrow(InvalidDateError);
+    expect(() => calculateSaju(2024, 1, 1, 10, NaN)).toThrow(InvalidDateError);
+    expect(() => calculateSaju(2024, 1, 1, Infinity)).toThrow(InvalidDateError);
+    for (const h of [25, -1]) {
+      const o = OLD.calculateSaju(2024, 1, 10, h, 0);
+      const n = calculateSaju(2024, 1, 10, h, 0);
+      expect([n.dayPillar, n.hourPillar]).toEqual([o.dayPillar, o.hourPillar]);
+    }
+    const o = OLD.calculateSaju(2024, 1, 10, null, 0);
+    expect(calculateSaju(2024, 1, 10, null as never, 0).hourPillar).toBe(o.hourPillar);
+  });
+
+  test('C-3: fold·utcOffsetMinutes 검사', () => {
+    expect(() => getGapjaAt(2024, 1, 1, 1, 0, { fold: 2 as never })).toThrow(TypeError);
+    expect(() => getGapjaAt(2024, 1, 1, 1, 0, { clock: { utcOffsetMinutes: 841 } })).toThrow(TypeError);
+    expect(() => getGapjaAt(2024, 1, 1, 1, 0, { clock: { utcOffsetMinutes: -721 } })).toThrow(TypeError);
+    expect(() => getGapjaAt(2024, 1, 1, 1, 0, { clock: { utcOffsetMinutes: 840 } })).not.toThrow();
+    expect(() => getGapjaAt(2024, 1, 1, 1, 0, { clock: { utcOffsetMinutes: -720 } })).not.toThrow();
+  });
+
+  test('C-6: SolarTermWithDate.sajuMonth − 1 = getSajuMonthAt (0이면 12)', () => {
+    for (let y = 1900; y <= 2050; y += 7) {
+      for (const t of getSolarTermsByYear(y)) {
+        if (t.type !== 'jeolgi') continue;
+        const want = t.sajuMonth - 1 === 0 ? 12 : t.sajuMonth - 1;
+        expect(getSajuMonthAt(t.year, t.month, t.day, t.hour, t.minute)).toBe(want);
+      }
+    }
+  });
+
+  test('1908년 전 알림 문구', () => {
+    expect(getGapjaAt(1900, 1, 1, 12, 0).clockNotice?.message).toContain('지방 평균시');
+    expect(getGapjaAt(1900, 1, 1, 12, 0).clockNotice?.message).toContain('32분 8초 늦었습니다');
+    expect(calculateSaju(1908, 4, 1, 0, 1, { clock: 'korea-legal' }).clockNotice?.message).toContain('건너뛴');
+  });
+});

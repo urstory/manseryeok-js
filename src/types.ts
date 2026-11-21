@@ -161,7 +161,10 @@ export interface SajuBoundary {
   chosen: 'before' | 'after';
   /** 이 시각 앞뒤 몇 분은 앞·뒤를 정할 수 없는가 */
   uncertainMinutes: number;
-  /** 그날의 법정 시계가 고정 UTC+9와 달랐으면 그 시계로 본 시각(분 아래는 버림). 같으면 null */
+  /**
+   * 그날의 법정 시계가 고정 UTC+9와 달랐으면 그 시계로 본 시각(분 아래는 버림). 같으면 null.
+   * 1908-04-01 전은 법정 시계가 아니라 서울 지방 평균시(UTC+8:27:52)로 본 시각이다
+   */
   atLegalClock: (DateTimeParts & { offsetMinutes: number }) | null;
 }
 

@@ -17,7 +17,7 @@ import { getPillarById } from '../data/sixty-pillars';
 import { isSupportedYear } from '../utils/range';
 import { OutOfRangeError, InvalidDateError } from '../types';
 import type { SolarToLunarResult, LunarToSolarResult, LunarCalendarGanji, BoundaryOptions } from '../types';
-import { checkBoundaryRule, dateBoundary } from './saju-boundary';
+import { checkBoundaryRule, dateBoundary, normalizeOptions } from './saju-boundary';
 
 function lunarCalendarGanji(lunarYear: number, lunarMonth: number, isLeap: boolean): LunarCalendarGanji {
   const { yearId, monthId } = lunarCalendarGanjiIds(lunarYear, lunarMonth);
@@ -68,7 +68,7 @@ export function solarToLunar(
   }
 
   const jd = jdFromSolar(solarYear, solarMonth, solarDay);
-  const r = jd === undefined ? undefined : resultOfJd(jd, options);
+  const r = jd === undefined ? undefined : resultOfJd(jd, normalizeOptions(options));
   if (jd === undefined || !r) {
     throw new InvalidDateError(`Invalid solar date: ${solarYear}-${solarMonth}-${solarDay}`);
   }
@@ -113,7 +113,7 @@ export function lunarToSolar(
   }
 
   const jd = jdFromLunar(lunarYear, lunarMonth, lunarDay, isLeapMonth);
-  const r = jd === undefined ? undefined : resultOfJd(jd, options);
+  const r = jd === undefined ? undefined : resultOfJd(jd, normalizeOptions(options));
   if (jd === undefined || !r) {
     throw new InvalidDateError(`Invalid lunar date: ${lunarYear}-${lunarMonth}-${lunarDay}${isLeapMonth ? ' (leap)' : ''}`);
   }
@@ -148,7 +148,7 @@ export function getGapja(
   solarDay: number,
   options: BoundaryOptions = {}
 ): import('../types').GapjaResult {
-  const result = solarToLunar(solarYear, solarMonth, solarDay, options);
+  const result = solarToLunar(solarYear, solarMonth, solarDay, normalizeOptions(options));
   return {
     yearPillar: result.gapja.yearPillar,
     yearPillarHanja: result.gapja.yearPillarHanja,

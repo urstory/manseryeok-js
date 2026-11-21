@@ -17,7 +17,7 @@ export default [
     },
     plugins: [
       nodeResolve(),
-      typescript()
+      typescript({ exclude: ['**/__tests__/**'] })
     ]
   },
   // ES Module
@@ -30,7 +30,7 @@ export default [
     },
     plugins: [
       nodeResolve(),
-      typescript()
+      typescript({ exclude: ['**/__tests__/**'] })
     ]
   }
 ];
