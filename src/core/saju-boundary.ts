@@ -8,6 +8,7 @@
 import {
   datePillarIds,
   entryOfJd,
+  jdFromLunar,
   jdFromSolar,
   legacyPillarIds,
   solarFromJd,
@@ -22,8 +23,10 @@ import type {
   ClockNotice,
   DateTimeParts,
   GapjaResult,
+  LunarInputOptions,
   SajuBoundary,
   SajuPillarPair,
+  SolarDate,
   TimeOptions,
 } from '../types';
 import { formatGapjaByIds } from './gapja-calculator';
@@ -58,6 +61,34 @@ export function requireJd(year: number, month: number, day: number): number {
     throw new InvalidDateError(`Invalid solar date: ${year}-${month}-${day}`);
   }
   return jd;
+}
+
+/**
+ * 1.3.0: 음력 입력 옵션을 풀어 양력 날짜를 낸다. `lunar`가 참이 아니면 받은 날짜 그대로(solarDate는 null).
+ * 음력 날짜가 없으면 lunarToSolar와 같은 OutOfRangeError·InvalidDateError를 던진다.
+ */
+export function resolveInputDate(
+  year: number,
+  month: number,
+  day: number,
+  options: LunarInputOptions
+): { year: number; month: number; day: number; solarDate: SolarDate | null } {
+  const { lunar, isLeapMonth } = options;
+  if (lunar !== undefined && typeof lunar !== 'boolean') throw new TypeError(`lunar must be a boolean, got ${JSON.stringify(lunar)}`);
+  if (isLeapMonth !== undefined && typeof isLeapMonth !== 'boolean') {
+    throw new TypeError(`isLeapMonth must be a boolean, got ${JSON.stringify(isLeapMonth)}`);
+  }
+  if (!lunar) {
+    if (isLeapMonth) throw new TypeError('isLeapMonth: true needs lunar: true');
+    return { year, month, day, solarDate: null };
+  }
+  if (!isSupportedYear(year)) throw new OutOfRangeError(year);
+  const jd = jdFromLunar(year, month, day, isLeapMonth === true);
+  if (jd === undefined || !entryOfJd(jd)) {
+    throw new InvalidDateError(`Invalid lunar date: ${year}-${month}-${day}${isLeapMonth ? ' (leap)' : ''}`);
+  }
+  const s = solarFromJd(jd);
+  return { year: s.year, month: s.month, day: s.day, solarDate: { year: s.year, month: s.month, day: s.day } };
 }
 
 export function requireTime(hour: number, minute: number): void {
@@ -251,6 +282,8 @@ export type GapjaAtResult = GapjaResult & {
   nearBoundary: boolean;
   /** 시계 알림 */
   clockNotice: ClockNotice | null;
+  /** 1.3.0: `lunar: true`로 넣었을 때 셈에 쓴 양력 날짜. 양력으로 넣으면 없다 */
+  solarDate?: SolarDate;
 };
 
 /**
@@ -262,9 +295,9 @@ export type GapjaAtResult = GapjaResult & {
  * @param day 양력 일
  * @param hour 시(0~23)
  * @param minute 분(0~59, 기본 0)
- * @param options 시계(`clock`)·`fold`
+ * @param options 시계(`clock`)·`fold`. 1.3.0: `lunar: true`(·`isLeapMonth`)면 연·월·일을 음력으로 읽는다
  * @throws {OutOfRangeError} 지원 범위 밖 연도
- * @throws {InvalidDateError} 유효하지 않은 날짜·시각
+ * @throws {InvalidDateError} 유효하지 않은 날짜·시각(음력 입력이면 그 해에 없는 음력 날짜·윤달 포함)
  */
 export function getGapjaAt(
   year: number,
@@ -272,17 +305,21 @@ export function getGapjaAt(
   day: number,
   hour: number,
   minute: number = 0,
-  options: TimeOptions = {}
+  options: TimeOptions & LunarInputOptions = {}
 ): GapjaAtResult {
-  const jd = requireJd(year, month, day);
+  const opts = normalizeOptions(options);
+  const input = resolveInputDate(year, month, day, opts);
+  const jd = requireJd(input.year, input.month, input.day);
   requireTime(hour, minute);
-  const r = momentPillars(jd, hour, minute, normalizeOptions(options));
-  return {
+  const r = momentPillars(jd, hour, minute, opts);
+  const result: GapjaAtResult = {
     ...formatGapjaByIds(r.yearPillarId, r.monthPillarId, mod(r.dayJd - DAY_PILLAR_EPOCH, 60)),
     sajuBoundary: r.sajuBoundary,
     nearBoundary: r.nearBoundary,
     clockNotice: r.clockNotice,
   };
+  if (input.solarDate) result.solarDate = input.solarDate;
+  return result;
 }
 
 /**

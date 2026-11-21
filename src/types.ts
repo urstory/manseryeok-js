@@ -112,6 +112,26 @@ export interface TimeOptions {
   fold?: 0 | 1;
 }
 
+/**
+ * 음력 날짜로 받는 선택 인자 — 1.3.0 (`calculateSaju`·`getGapjaAt`)
+ *
+ * `lunar: true`면 연·월·일 인자를 음력으로 읽어 `lunarToSolar`와 같은 규칙으로 양력 날짜를 구한 뒤,
+ * 그 양력 날짜를 넣은 것과 똑같이 셈한다. 시·분은 그대로 쓴다.
+ */
+export interface LunarInputOptions {
+  /** true면 연·월·일을 음력으로 읽는다(기본 false = 양력) */
+  lunar?: boolean;
+  /** 음력 윤달인가(기본 false). `lunar: true`일 때만 쓰고, `lunar` 없이 true를 주면 TypeError */
+  isLeapMonth?: boolean;
+}
+
+/** 양력 날짜 — 1.3.0 (음력으로 넣었을 때 결과의 `solarDate`) */
+export interface SolarDate {
+  year: number;
+  month: number;
+  day: number;
+}
+
 /** 시계에 관한 알림 — 1.2.0 */
 export interface ClockNotice {
   /** 그때 한국 법정 시계의 UTC 차이(분). 1908년 전 지방 평균시는 507.8666…(8시간 27분 52초) */

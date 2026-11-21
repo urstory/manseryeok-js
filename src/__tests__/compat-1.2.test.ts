@@ -31,8 +31,8 @@ const SAJU_OPTIONS: Array<SajuOptions | undefined> = [
   { longitude: 140 },
 ];
 /** 1.3.0 옵션을 끄는 값으로 준 것 — 주지 않은 것과 같아야 한다 */
-const OFF: SajuOptions[] = [{ equationOfTime: false }];
-const OFF_AT: Array<Record<string, unknown>> = [{}];
+const OFF: SajuOptions[] = [{ equationOfTime: false }, { lunar: false }, { lunar: false, isLeapMonth: false, equationOfTime: false }];
+const OFF_AT: Array<Record<string, unknown>> = [{ lunar: false }, { lunar: false, isLeapMonth: false }, {}];
 
 function eachDay(fn: (y: number, m: number, d: number, i: number) => void): number {
   let i = 0;

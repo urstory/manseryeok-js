@@ -6,11 +6,11 @@
 
 import { solarToLunar } from './solar-lunar-converter';
 import { formatGapjaByIds } from './gapja-calculator';
-import { checkBoundaryRule, momentPillars, normalizeOptions, requireJd } from './saju-boundary';
+import { checkBoundaryRule, momentPillars, normalizeOptions, requireJd, resolveInputDate } from './saju-boundary';
 import { getPillarById } from '../data/sixty-pillars';
 import { EOT_RANGE_TEXT, equationOfTimeAtUtcMinute } from './eot';
 import { InvalidDateError } from '../types';
-import type { BoundaryRule, ClockNotice, ClockOption, GapjaResult, SajuBoundary } from '../types';
+import type { BoundaryRule, ClockNotice, ClockOption, GapjaResult, LunarInputOptions, SajuBoundary, SolarDate } from '../types';
 
 const DAY_PILLAR_EPOCH = 2415011;
 
@@ -54,12 +54,14 @@ export interface SajuResult {
    * 양수면 해시계가 평균 태양시보다 빠르다(보정한 시각이 늦어진다).
    */
   equationOfTimeSeconds?: number;
+  /** 1.3.0: `lunar: true`로 넣었을 때 셈에 쓴 양력 날짜. 양력으로 넣으면 없다 */
+  solarDate?: SolarDate;
 }
 
 /**
  * 사주 계산 옵션
  */
-export interface SajuOptions {
+export interface SajuOptions extends LunarInputOptions {
   /** 경도 (기본값: 127 - 서울). clock이 { utcOffsetMinutes }이면 longitude를 함께 줄 때만 경도 보정을 한다(1.2.0) */
   longitude?: number;
   /** 시간 보정 적용 여부 (기본값: true) */
@@ -90,7 +92,8 @@ export interface SajuOptions {
  * @param solarHour 양력 시 (0~23). 시를 모르면 undefined를 넘긴다(null은 1.1.0처럼 0시로 읽힌다).
  *   범위는 검사하지 않는다(1.1.0과 같음). 유한한 수가 아니면(NaN 등) InvalidDateError
  * @param solarMinute 양력 분 (0~59, 기본값: 0)
- * @param options 사주 계산 옵션
+ * @param options 사주 계산 옵션. 1.3.0: `lunar: true`(·`isLeapMonth`)면 연·월·일 인자를 음력으로 읽는다
+ *   (lunarToSolar로 구한 양력 날짜를 넣은 것과 같은 결과 + `solarDate`)
  * @returns 사주팔자 정보
  */
 export function calculateSaju(
@@ -102,6 +105,10 @@ export function calculateSaju(
   options: SajuOptions = {}
 ): SajuResult {
   options = normalizeOptions(options);
+  const input = resolveInputDate(solarYear, solarMonth, solarDay, options);
+  solarYear = input.year;
+  solarMonth = input.month;
+  solarDay = input.day;
   const {
     longitude = 127,
     applyTimeCorrection = true,
@@ -247,6 +254,7 @@ export function calculateSaju(
     clockNotice,
   };
   if (equationOfTimeSeconds !== undefined) result.equationOfTimeSeconds = equationOfTimeSeconds;
+  if (input.solarDate) result.solarDate = input.solarDate;
   return result;
 }
 

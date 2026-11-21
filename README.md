@@ -279,6 +279,24 @@ if (saju.isTimeCorrected) {
 // 시간 보정: 13시 58분 (진태양시)
 ```
 
+### 음력 생일로 바로 사주 (`lunar`, v1.3.0)
+
+`calculateSaju`·`getGapjaAt`에 `lunar: true`를 주면 연·월·일 인자를 음력으로 읽습니다. 윤달이면 `isLeapMonth: true`도 줍니다. 안에서는 `lunarToSolar`로 양력 날짜를 구한 뒤 양력으로 넣은 것과 똑같이 셈하고, 셈에 쓴 양력 날짜를 `solarDate`로 붙입니다.
+
+```ts
+import { calculateSaju, getGapjaAt } from '@fullstackfamily/manseryeok';
+
+const saju = calculateSaju(2024, 1, 1, 10, 0, { lunar: true }); // 음력 2024년 정월 초하루 10시
+saju.solarDate;   // { year: 2024, month: 2, day: 10 }
+// 나머지는 calculateSaju(2024, 2, 10, 10, 0)과 같다
+
+getGapjaAt(2023, 2, 1, 9, 30, { lunar: true, isLeapMonth: true }).solarDate; // { year: 2023, month: 3, day: 22 } (윤2월)
+```
+
+- 그 해에 없는 윤달, 작은달의 30일 등 없는 음력 날짜는 `InvalidDateError`, 범위 밖 해는 `OutOfRangeError`(`lunarToSolar`와 같음). 음력 범위는 1391-01-01 ~ 2050-11-18입니다.
+- `lunar` 없이 `isLeapMonth: true`만 주면 실수로 보고 `TypeError`를 던집니다.
+- 새 함수(`calculateSajuFromLunar` 등)를 만들지 않고 옵션으로 둔 까닭: 인자 차례(연·월·일·시·분·옵션)가 양력과 같아 화면에서 양력·음력 선택만 옵션으로 넘기면 되고, `clock`·`longitude`·`equationOfTime` 같은 다른 옵션과 그대로 섞어 쓸 수 있으며, 1.2.0의 인자 꼴은 하나도 바뀌지 않기 때문입니다. 옵션을 주지 않으면 결과는 1.2.0과 같습니다(`solarDate`도 붙지 않음).
+
 ### 시간 보정 없이 간단 계산
 
 ```ts
@@ -624,6 +642,7 @@ r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, m
 
 - `hour`: 0~23, `minute`: 0~59(기본 0) — 범위 밖이면 `InvalidDateError`(새 함수는 시·분을 검사합니다)
 - `options.clock`: `'kst-fixed'`(기본)·`'korea-legal'`·`{ utcOffsetMinutes }`(−720~840), `options.fold`: `0 | 1` — 그 밖의 값이면 `TypeError`
+- `options.lunar`·`options.isLeapMonth` (v1.3.0): `lunar: true`면 연·월·일을 음력으로 읽고 결과에 `solarDate`를 붙인다
 
 **반환값:** `GapjaResult & { sajuBoundary, nearBoundary, clockNotice }`
 - `sajuBoundary`: 입력 날짜(고정 UTC+9 달력 또는 입력 시계의 달력)나 그 순간의 한국 시각 날짜에 드는 절 가운데 입력 시각에 가까운 것의 경계, `chosen`은 시각으로 정한 쪽
@@ -662,6 +681,7 @@ r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, m
   - `applyTimeCorrection`: 시간 보정 적용 여부 (기본값: true)
   - `boundaryRule` (v1.2.0): 시를 주지 않았을 때 절입일의 연주·월주(기본 `'noon'`). 시를 주면 절입 시각과 견주므로 쓰지 않습니다. 단 `'legacy-fixed'`는 시를 주어도 1.1.0처럼 고정 날짜로 냅니다
   - `clock`·`fold` (v1.2.0): 입력 시각을 읽는 시계([한국 표준시와 서머타임](#한국-표준시와-서머타임-clock-v120))
+  - `lunar`·`isLeapMonth` (v1.3.0): `lunar: true`면 연·월·일을 음력으로 읽는다([음력 생일로 바로 사주](#음력-생일로-바로-사주-lunar-v130)). 결과에 `solarDate`가 붙는다
   - `equationOfTime` (v1.3.0): `true`면 경도 보정에 균시차를 더한다(기본 `false`, [균시차까지 더한 진태양시](#균시차까지-더한-진태양시-equationoftime-v130)). 1800년 전 날짜에 시를 주면 `RangeError`
 
 **반환값:** `SajuResult` (v1.2.0부터 `sajuBoundary`·`nearBoundary`·`clockNotice`도 줍니다. 시를 주지 않으면 `nearBoundary`는 `false`, `clockNotice`는 `null`. v1.3.0: `equationOfTime: true`로 보정했으면 `equationOfTimeSeconds`도 줍니다)
