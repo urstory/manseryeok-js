@@ -76,8 +76,8 @@ export function readWallClock(localSec: number, clock: ClockOption = 'kst-fixed'
         legalOffsetMinutes: legal.offset / 60,
         dst: legal.dst,
         message:
-          `이 시각의 한국 법정 시계는 ${formatOffset(legal.offset)}${legal.dst ? '(서머타임)' : ''}로, ` +
-          `고정 UTC+9와 ${formatDiff(diff)} ${diff < 0 ? '늦었습니다' : '빨랐습니다'}. ` +
+          `이때 한국의 법정 시계는 ${formatOffset(legal.offset)}${legal.dst ? '(서머타임)' : ''}이라 ` +
+          `고정 UTC+9보다 ${formatDiff(diff)} ${diff < 0 ? '늦었습니다' : '빨랐습니다'}. ` +
           `태어난 시각을 그때의 시계로 적었다면 clock: 'korea-legal'로 다시 셈하면 결과가 달라질 수 있습니다.`,
       };
     }

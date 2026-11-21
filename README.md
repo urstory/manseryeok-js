@@ -4,6 +4,8 @@ Korean Lunar Calendar (만세력) JavaScript Library
 
 한국 음력(만세력) 데이터를 제공하는 순수 JavaScript/TypeScript 라이브러리입니다.
 
+> **1.2.0(개발 중 — 아직 npm에 올리지 않음): 절입일 앞뒤의 연주·월주가 달라집니다.** 연주·월주의 경계를 양력 고정 날짜(2/4·3/6 …)에서 실제 절입 시각으로 바꿉니다. 1900~2050년 55,152일 가운데 월주 884일·연주 107일의 값이 바뀝니다(버그 수정). 자세한 내용은 [변경 이력](#v120-개발-중--아직-npm에-올리지-않음)을 보세요.
+
 ## 왜 이 라이브러리인가?
 
 이 라이브러리는 **한국천문연구원(KASI)** 의 음양력 자료를 사용합니다. v1.1.0부터는 한국천문연구원 [음양력 정보제공 서비스](https://www.data.go.kr/data/15012679/openapi.do)(공공데이터포털, 이용허락 제한 없음)에서 1391~2050년 전체를 받아 음력 달 표로 만들어 넣었습니다.
@@ -12,7 +14,7 @@ Korean Lunar Calendar (만세력) JavaScript Library
 
 - **윤달(閏月) 위치가 다릅니다**: 한국과 중국은 같은 음력 체계를 사용하지만, 윤달이 들어가는 위치가 서로 다른 경우가 많습니다.
 - **시간대 차이**: 한국 표준시(KST)를 기준으로 계산합니다.
-- **절기**: 사주 연주·월주는 절기를 기준으로 바뀝니다(현재 버전의 한계는 아래 [알려진 제한](#알려진-제한) 참고).
+- **절기**: 사주 연주·월주는 절(입춘·경칩 …)이 드는 순간에 바뀝니다. 1.2.0부터 1391~2050년의 실제 절입 시각(한국천문연구원 발표값과 천문 계산, 분 단위)으로 정합니다.
 
 따라서 정확한 한국 사주팔자/운세 계산을 위해서는 한국 음력 데이터를 사용하는 것이 필수적입니다.
 
@@ -32,6 +34,8 @@ Korean Lunar Calendar (만세력) JavaScript Library
 - ✅ **정확한 월주 절기 기준 계산** - 월주를 절기(節氣) 기준으로 재계산 (v1.0.7)
 - ✅ **음력 달 날수·요일·세차·월건** - 변환 결과에 함께 제공 (v1.1.0)
 - ✅ **작아진 번들** - 범위는 4배 넓어졌지만 크기는 약 1/3 (gzip 약 14KB, v1.1.0)
+- ✅ **실제 절입 시각으로 연주·월주** - 1391~2050년 24절기 표(분 단위), 절입일에는 `sajuBoundary`로 바뀌는 시각과 앞뒤 값 (v1.2.0, 개발 중)
+- ✅ **시각을 받는 함수와 한국 법정 시계** - `getGapjaAt`·`getJeolAround`·`getIpchun`·`getSajuMonthAt`, 옵션 `clock`(1954~1961 UTC+8:30·서머타임) (v1.2.0, 개발 중)
 
 ## 설치
 
@@ -65,6 +69,7 @@ node examples/06-saju-calculation.mjs
 | `10-sixty-pillars.mjs` | 60갑자 데이터 조회 |
 | `11-solar-terms-info.mjs` | 24절기 정보 조회 |
 | `12-solar-terms-datetime.mjs` | 절기 시각 조회 |
+| `13-saju-boundary.mjs` | 절입일의 연주·월주, 시각 견줌, `boundaryRule`·`clock` (v1.2.0) |
 
 ## 사용법
 
@@ -140,17 +145,97 @@ console.log('평4월 1일 → 양력:', normalMonthResult.solar.year, '년', nor
 ```ts
 import { getGapja } from '@fullstackfamily/manseryeok';
 
-// 1984년 갑자년 (입춘 이후)
-const gapja1 = getGapja(1984, 2, 4);
-console.log('1984년 2월 4일 (입춘):', gapja1.yearPillar, '년');
-// 1984년 2월 4일 (입춘): 갑자 년
+// 1984년 갑자년 (1984년 입춘은 2월 5일 00:19)
+const gapja1 = getGapja(1984, 2, 5);
+console.log('1984년 2월 5일 (입춘):', gapja1.yearPillar, '년');
+// 1984년 2월 5일 (입춘): 갑자 년
 
 // 1984년 입춘 전 (아직 계해년)
-const gapja2 = getGapja(1984, 2, 2);
-console.log('1984년 2월 2일 (입춘 전):', gapja2.yearPillar, '년');
-// 1984년 2월 2일 (입춘 전): 계해 년
+const gapja2 = getGapja(1984, 2, 4);
+console.log('1984년 2월 4일 (입춘 전날):', gapja2.yearPillar, '년');
+// 1984년 2월 4일 (입춘 전날): 계해 년 — 1.1.0은 2/4 고정이라 갑자년을 주었다
 
-// 참고: 한국 사주에서 년주는 입춘(2월 3-4일 경)에 변경됩니다
+// 참고: 한국 사주에서 연주는 입춘(2월 3~5일)이 드는 순간에 바뀝니다
+```
+
+### 절입일의 연주·월주 (v1.2.0)
+
+절(입춘·경칩 …)이 든 날은 하루 안에서 연주·월주가 바뀝니다. 2024년 입춘은 2월 4일 **17시 27분**이라, 그날의 대부분(0:00~17:26)은 아직 계묘년 을축월입니다.
+
+```ts
+import { solarToLunar, getGapjaAt, calculateSaju } from '@fullstackfamily/manseryeok';
+
+// 날짜만: 그날 정오의 값 + 바뀌는 시각
+const r = solarToLunar(2024, 2, 4);
+r.gapja.yearPillar;   // '계묘' — 1.1.0은 '갑진'(2/4 고정)
+r.gapja.monthPillar;  // '을축'
+r.sajuBoundary;
+// { term: { name: '입춘', hanja: '立春', index: 0 },
+//   at: { year: 2024, month: 2, day: 4, hour: 17, minute: 27 },   // 한국 시각(고정 UTC+9), 이 분부터 뒤
+//   atUtc: '2024-02-04T08:27Z',
+//   before: { yearPillar: '계묘', yearPillarHanja: '癸卯', monthPillar: '을축', monthPillarHanja: '乙丑' },
+//   after:  { yearPillar: '갑진', yearPillarHanja: '甲辰', monthPillar: '병인', monthPillarHanja: '丙寅' },
+//   yearChanges: true, chosen: 'before', uncertainMinutes: 1, atLegalClock: null }
+solarToLunar(2024, 2, 5).sajuBoundary;  // null — 절이 들지 않은 날
+
+// 시각을 주면 절입 시각과 견줘 정확히
+getGapjaAt(2024, 2, 4, 17, 26).monthPillar;  // '을축'
+getGapjaAt(2024, 2, 4, 17, 27).monthPillar;  // '병인' (nearBoundary: true — 앞뒤 1분은 표로 정할 수 없음)
+calculateSaju(2024, 2, 4, 21, 0).yearPillar; // '갑진'
+```
+
+**태어난 날을 받는 화면은 기본값 그대로 쓰고 `sajuBoundary`가 있으면 태어난 시각을 물으세요.** 달력·책력처럼 절기가 든 날부터 새 달로 보여 주려면 `boundaryRule: 'day-end'`를 쓰세요.
+
+```ts
+// 날짜만 받는 함수(solarToLunar·lunarToSolar·getGapja·calculateSaju(시 없이))의 마지막 선택 인자
+solarToLunar(2024, 2, 4, { boundaryRule: 'noon' });         // 기본: 그날 정오의 값(절입 분이 12:00 이하면 새 달)
+solarToLunar(2024, 2, 4, { boundaryRule: 'day-end' });      // 절입일은 하루 전체를 새 달로(책력 표기) → 갑진년 병인월
+solarToLunar(2024, 2, 4, { boundaryRule: 'day-start' });    // 절입일은 하루 전체를 앞 달로 → 계묘년 을축월
+solarToLunar(2024, 2, 4, { boundaryRule: 'legacy-fixed' }); // 1.1.0의 고정 날짜 규칙(옮겨 가는 동안만, 2.0에서 없앰)
+lunarToSolar(2023, 12, 25, false, { boundaryRule: 'day-end' });
+calculateSaju(2024, 2, 4, undefined, 0, { boundaryRule: 'day-end' });
+```
+
+### 한국 표준시와 서머타임 (`clock`, v1.2.0)
+
+한국의 법정 시계는 늘 UTC+9가 아니었습니다(1908~1911·1954~1961년 UTC+8:30, 1948~1951·1955~1960·1987~1988년 여름 서머타임). 시각을 받는 함수(`calculateSaju`·`getGapjaAt`·`getJeolAround`·`getSajuMonthAt`)의 옵션 `clock`으로 입력 시각을 읽는 법을 고릅니다.
+
+| 값 | 입력 시각을 읽는 법 |
+|---|---|
+| `'kst-fixed'`(기본) | 언제나 UTC+9 (1.1.0까지와 같음) |
+| `'korea-legal'` | 그때의 한국 법정 시계(IANA tz database `Asia/Seoul`, 서머타임 포함). 시주의 경도 보정도 그 시계의 자오선 기준 |
+| `{ utcOffsetMinutes: n }` | 호출자가 준 고정 차이(해외 출생 등) |
+
+```ts
+// 기본(kst-fixed)으로 셈했는데 그때 법정 시계가 UTC+9가 아니었으면 알림을 단다
+calculateSaju(1960, 6, 1, 12, 0).clockNotice;
+// { legalOffsetMinutes: 570, dst: true, message: '이때 한국의 법정 시계는 UTC+9:30(서머타임)이라 …' }
+
+// 그때 시계로 적은 시각이면
+calculateSaju(1960, 6, 1, 12, 0, { clock: 'korea-legal' });
+
+// 서머타임이 끝나며 두 번 지나간 시각(1987-10-11 02:00~02:59): fold 0 = 앞의 것(기본), 1 = 뒤의 것
+calculateSaju(1987, 10, 11, 2, 30, { clock: 'korea-legal', fold: 1 });
+
+// 해외 출생(예: 베이징 UTC+8)
+getGapjaAt(2024, 2, 4, 16, 27, { clock: { utcOffsetMinutes: 480 } }).monthPillar; // '병인'
+```
+
+1.x의 기본값은 `'kst-fixed'` 그대로입니다(바꾸면 그 기간에 태어난 사람의 값이 달라지므로 2.0에서 정합니다). 날짜만 받는 함수는 언제나 고정 UTC+9의 날짜·정오를 쓰고, 법정 시계가 달랐던 때의 절입일에는 `sajuBoundary.atLegalClock`에 그 시계로 본 시각을 함께 줍니다(예: 1954년 대설은 고정 UTC+9로 12월 8일 00:29, 법정 시계로 12월 7일 23:59).
+
+### 직전 절·다음 절, 입춘, 사주 월 (v1.2.0)
+
+```ts
+import { getJeolAround, getIpchun, getSajuMonthAt, getSajuBoundary } from '@fullstackfamily/manseryeok';
+
+getJeolAround(1990, 5, 15, 14, 30);
+// { prev: { name: '입하', month: 5, day: 6, hour: 3, minute: 35, … },
+//   next: { name: '망종', month: 6, day: 6, hour: 7, minute: 46, … } }   — 대운 계산 등에
+
+getIpchun(2024);                         // { name: '입춘', year: 2024, month: 2, day: 4, hour: 17, minute: 27, … }
+getSajuMonthAt(2024, 2, 4);              // 12 (축월, 정오의 값)
+getSajuMonthAt(2024, 2, 4, 17, 27);      // 1 (인월)
+getSajuBoundary(2024, 2, 4)?.at;         // { year: 2024, month: 2, day: 4, hour: 17, minute: 27 }
 ```
 
 ### 사주팔자 계산 (시주 포함)
@@ -190,7 +275,7 @@ import { calculateSajuSimple } from '@fullstackfamily/manseryeok';
 const saju = calculateSajuSimple(1984, 2, 2, 2);
 
 console.log(`사주: ${saju.yearPillar}년 ${saju.monthPillar}월 ${saju.dayPillar}일 ${saju.hourPillar}시`);
-// 사주: 계해년 병인월 병인일 기축시
+// 사주: 계해년 을축월 병인일 기축시
 ```
 
 ### 시간 보정 및 경도 설정
@@ -343,6 +428,8 @@ console.log('2월(인월) 절기:', februaryTerms.map(t => t.name).join(', '));
 
 ### 사주 월 계산 (절기 기준)
 
+> `getSajuMonth(month, day)`는 해를 받지 않아 양력 고정 날짜로 셈하는 **대략값**입니다(1.2.0에서 `@deprecated`, 값은 1.1.0 그대로). 실제 절입 시각으로 셈하려면 `getSajuMonthAt(year, month, day, hour?, minute?)`을 쓰세요.
+
 ```ts
 import { getSajuMonth } from '@fullstackfamily/manseryeok';
 
@@ -390,13 +477,15 @@ printSolarTerms();
 ```ts
 import { getSolarTermsByYear, getSolarTermForDate } from '@fullstackfamily/manseryeok';
 
-// 2024년 모든 절기 시각 조회
+// 2024년 모든 절기 시각 조회 (한국 시각 고정 UTC+9, 1.2.0부터 실제 값)
 const terms2024 = getSolarTermsByYear(2024);
 terms2024.forEach(term => {
   console.log(`${term.name} (${term.nameHanja}): ${term.month}월 ${term.day}일 ${term.hour}시 ${term.minute}분`);
 });
-// 입춘 (立春): 2월 4일 5시 2분
-// 우수 (雨水): 2월 19일 0시 51분
+// 소한 (小寒): 1월 6일 5시 49분
+// 대한 (大寒): 1월 20일 23시 7분
+// 입춘 (立春): 2월 4일 17시 27분
+// 우수 (雨水): 2월 19일 13시 13분
 // ...
 
 // 특정 날짜의 절기 확인
@@ -406,7 +495,7 @@ if (term) {
   console.log('절기 시각:', term.month, '월', term.day, '일', term.hour, '시', term.minute, '분');
 }
 // 2024년 2월 4일은 입춘 입니다
-// 절기 시각: 2 월 4 일 5 시 2 분
+// 절기 시각: 2 월 4 일 17 시 27 분
 ```
 
 ### 특정 월의 절기 목록
@@ -419,8 +508,8 @@ const februaryTerms = getSolarTermsByMonth(2024, 2);
 februaryTerms.forEach(term => {
   console.log(`${term.month}/${term.day} ${term.hour}:${String(term.minute).padStart(2, '0')} - ${term.name} (${term.nameHanja})`);
 });
-// 2/4 5:02 - 입춘 (立春)
-// 2/19 1:23 - 우수 (雨水)
+// 2/4 17:27 - 입춘 (立春)
+// 2/19 13:13 - 우수 (雨水)
 ```
 
 ### 지원되는 절기 연도 확인
@@ -429,15 +518,15 @@ februaryTerms.forEach(term => {
 import { getSupportedSolarTermYears } from '@fullstackfamily/manseryeok';
 
 const supportedYears = getSupportedSolarTermYears();
-console.log('절기 데이터 지원 연도:', supportedYears.join(', '));
-// 절기 데이터 지원 연도: 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030
-
-// 참고: 절기 시각 데이터는 아직 2020~2030년만 있습니다(알려진 제한 참고)
+console.log('절기 데이터 지원 연도:', supportedYears[0], '~', supportedYears[supportedYears.length - 1]);
+// 절기 데이터 지원 연도: 1391 ~ 2050   (1.1.0까지는 2020~2030)
 ```
+
+해는 절입 순간을 라이브러리 날짜(한국 시각)로 옮긴 해로 묶습니다. 그래서 1391~1581년(율리우스력)은 해마다 대한부터 다음 소한까지 24개, 1582년은 10월 5~14일이 없어 23개입니다.
 
 ## API 문서
 
-### `solarToLunar(solarYear, solarMonth, solarDay)`
+### `solarToLunar(solarYear, solarMonth, solarDay, options?)`
 
 양력을 음력으로 변환합니다.
 
@@ -445,6 +534,7 @@ console.log('절기 데이터 지원 연도:', supportedYears.join(', '));
 - `solarYear`: 양력 년 (1391~2050, 1582-10-15 이전은 율리우스력 날짜)
 - `solarMonth`: 양력 월 (1~12)
 - `solarDay`: 양력 일 (1~31)
+- `options.boundaryRule` (v1.2.0): 절입일의 연주·월주를 어느 쪽으로 낼지 — `'noon'`(기본, 그날 정오의 값)·`'day-end'`·`'day-start'`·`'legacy-fixed'`
 
 **반환값:** `SolarToLunarResult`
 
@@ -456,7 +546,11 @@ r.julianDay;          // 2460375
 r.lunarMonthDays;     // 29  (그 음력 달의 날수, v1.1.0)
 r.weekday;            // 2   (0=일 … 6=토, v1.1.0)
 r.lunarCalendarGanji; // { year: '갑진', yearHanja: '甲辰', month: '병인', monthHanja: '丙寅' } (v1.1.0)
+r.gapja.monthPillar;  // '정묘' (경칩 11:23이 든 날, 정오의 값 — v1.2.0)
+r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, minute: 23 }, chosen: 'after', … } (v1.2.0)
 ```
+
+`sajuBoundary`(v1.2.0)는 그날 절(12절)이 들면 바뀌는 시각과 앞뒤의 연주·월주를 담고, 없으면 `null`입니다. 필드: `term`(절 이름·한자·`SOLAR_TERM_NAMES` 번호), `at`(한국 시각 고정 UTC+9, 분 — 이 분부터 뒤), `atUtc`(ISO 8601 UTC, 분), `before`·`after`(연주·월주와 한자), `yearChanges`(입춘이면 `true`), `chosen`(`gapja`에 실린 쪽), `uncertainMinutes`(앞뒤 몇 분은 정할 수 없는지), `atLegalClock`(그때 법정 시계가 UTC+9가 아니었으면 그 시계로 본 시각과 `offsetMinutes`, 같으면 `null`). 날짜는 라이브러리 날짜(1582-10-04까지 율리우스력)이고, `atUtc`만 ISO 8601대로 그레고리력입니다.
 
 `lunarCalendarGanji`는 한국천문연구원의 '세차'·'월건'과 같은 **음력 기준** 간지입니다. 사주 연주·월주(절기 기준, `gapja.yearPillar`·`gapja.monthPillar`)와는 다릅니다. 윤달에는 월건이 없어 `month`·`monthHanja`가 `null`입니다.
 
@@ -464,7 +558,7 @@ r.lunarCalendarGanji; // { year: '갑진', yearHanja: '甲辰', month: '병인',
 - `OutOfRangeError`: 지원 범위 밖 연도
 - `InvalidDateError`: 유효하지 않은 날짜
 
-### `lunarToSolar(lunarYear, lunarMonth, lunarDay, isLeapMonth?)`
+### `lunarToSolar(lunarYear, lunarMonth, lunarDay, isLeapMonth?, options?)`
 
 음력을 양력으로 변환합니다.
 
@@ -473,19 +567,49 @@ r.lunarCalendarGanji; // { year: '갑진', yearHanja: '甲辰', month: '병인',
 - `lunarMonth`: 음력 월 (1~12)
 - `lunarDay`: 음력 일 (1~30)
 - `isLeapMonth`: 윤달 여부 (기본값: false)
+- `options.boundaryRule` (v1.2.0): `solarToLunar`와 같음
 
-**반환값:** `LunarToSolarResult` (v1.1.0부터 `julianDay`·`lunarMonthDays`·`weekday`·`lunarCalendarGanji`도 함께 줍니다)
+**반환값:** `LunarToSolarResult` (v1.1.0부터 `julianDay`·`lunarMonthDays`·`weekday`·`lunarCalendarGanji`, v1.2.0부터 `sajuBoundary`도 함께 줍니다)
 
-### `getGapja(solarYear, solarMonth, solarDay)`
+### `getGapja(solarYear, solarMonth, solarDay, options?)`
 
-특정 날짜의 60갑자를 계산합니다.
+특정 날짜의 60갑자를 계산합니다. 연주·월주는 기본으로 그날 정오의 값입니다(시각까지 보려면 `getGapjaAt`).
 
 **매개변수:**
 - `solarYear`: 양력 년
 - `solarMonth`: 양력 월
 - `solarDay`: 양력 일
+- `options.boundaryRule` (v1.2.0): `solarToLunar`와 같음
 
 **반환값:** `GapjaResult`
+
+### `getGapjaAt(year, month, day, hour, minute?, options?)` (v1.2.0)
+
+시각까지 주고 연주·월주·일주를 구합니다(시주 없음). 입력 시각을 절대 시각으로 바꿔 절입 시각과 견줍니다(절입 분부터 뒤). 일주는 입력 날짜의 일진입니다.
+
+- `hour`: 0~23, `minute`: 0~59(기본 0) — 범위 밖이면 `InvalidDateError`
+- `options.clock`: `'kst-fixed'`(기본)·`'korea-legal'`·`{ utcOffsetMinutes }`, `options.fold`: `0 | 1`
+
+**반환값:** `GapjaResult & { sajuBoundary, nearBoundary, clockNotice }`
+- `sajuBoundary`: 입력 날짜(또는 그 순간의 한국 시각 날짜)에 드는 절의 경계, `chosen`은 시각으로 정한 쪽
+- `nearBoundary`: 입력 시각이 절입에서 `uncertainMinutes` 안이면 `true`(값은 그래도 견준 대로)
+- `clockNotice`: `{ legalOffsetMinutes, dst, message }` 또는 `null`
+
+### `getSajuBoundary(year, month, day)` (v1.2.0)
+
+그 날짜(한국 시각 고정 UTC+9)에 드는 절의 경계 정보(`SajuBoundary`). 없으면 `null`. `chosen`은 기본값(정오)이 실린 쪽입니다.
+
+### `getJeolAround(year, month, day, hour, minute?, options?)` (v1.2.0)
+
+그 순간의 직전 절(`prev`, 절입 분이 입력 시각 이하인 마지막 절)과 다음 절(`next`)을 `SolarTermWithDate`로 줍니다(한국 시각 고정 UTC+9). 대운 계산 등에 씁니다. `options`는 `getGapjaAt`과 같습니다.
+
+### `getIpchun(year)` (v1.2.0)
+
+그 해(1391~2050)의 입춘을 `SolarTermWithDate`로 줍니다. 범위 밖이면 `OutOfRangeError`.
+
+### `getSajuMonthAt(year, month, day, hour?, minute?, options?)` (v1.2.0)
+
+연도까지 받아 사주 월(1 = 인월 … 11 = 자월, 12 = 축월)을 구합니다. 시를 주면 절입 시각과 견주고, 주지 않으면 `options.boundaryRule`(기본 `'noon'`)대로 냅니다. `options`에는 `clock`·`fold`도 줄 수 있습니다.
 
 ### `calculateSaju(solarYear, solarMonth, solarDay, solarHour?, solarMinute?, options?)`
 
@@ -500,8 +624,12 @@ r.lunarCalendarGanji; // { year: '갑진', yearHanja: '甲辰', month: '병인',
 - `options`: 사주 계산 옵션
   - `longitude`: 경도 (기본값: 127 - 서울)
   - `applyTimeCorrection`: 시간 보정 적용 여부 (기본값: true)
+  - `boundaryRule` (v1.2.0): 시를 주지 않았을 때 절입일의 연주·월주(기본 `'noon'`). 시를 주면 절입 시각과 견주므로 쓰지 않습니다. 단 `'legacy-fixed'`는 시를 주어도 1.1.0처럼 고정 날짜로 냅니다
+  - `clock`·`fold` (v1.2.0): 입력 시각을 읽는 시계([한국 표준시와 서머타임](#한국-표준시와-서머타임-clock-v120))
 
-**반환값:** `SajuResult`
+**반환값:** `SajuResult` (v1.2.0부터 `sajuBoundary`·`nearBoundary`·`clockNotice`도 줍니다. 시를 주지 않으면 `nearBoundary`는 `false`, `clockNotice`는 `null`)
+
+시를 주면 연주·월주를 절입 시각과 견줘 정합니다(v1.2.0). 시주·일주·경도 보정의 셈은 1.1.0 그대로입니다.
 
 **예시:**
 ```ts
@@ -560,9 +688,9 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 **반환값:** 해당 월의 절기 배열
 
-### `getSajuMonth(month, day)`
+### `getSajuMonth(month, day)` (deprecated)
 
-양력 날짜를 사주 월로 변환합니다.
+양력 날짜를 사주 월로 변환합니다. 해를 받지 않아 고정 날짜로 셈하는 대략값입니다 — `getSajuMonthAt`을 쓰세요. `isBeforeLichun(month, day)`도 같은 이유로 deprecated입니다(`getIpchun`을 쓰세요). 두 함수의 값은 1.1.0 그대로입니다.
 
 사주에서 월주는 절기(節氣)를 기준으로 계산합니다.
 입춘(立春, 2월 4일경)부터 2월, 경칩(驚蟄, 3월 6일경)부터 3월, ...
@@ -586,19 +714,30 @@ console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 
 ## 알려진 제한
 
-- **연주·월주의 경계는 실제 절입 시각이 아니라 양력 고정 날짜입니다.** 연주는 2월 4일, 월주는 1/6·2/4·3/6·4/5·5/6·6/6·7/7·8/8·9/8·10/8·11/8·12/7에 바뀝니다. 실제 절입은 해마다 하루 정도 앞뒤로 움직이므로, **절입일 앞뒤에 태어난 경우 연주·월주가 실제와 다를 수 있습니다**(예: 2024-03-05 오후는 실제로는 경칩 뒤라 정묘월이지만 이 라이브러리는 병인월). 천문 계산으로 검증한 절입 시각을 쓰도록 고치는 작업을 진행 중입니다.
-- 절기 시각 데이터(`getSolarTermsByYear` 등)는 2020~2030년만 있고, 해마다 같은 값이 들어 있어 실제 시각과 다릅니다. 위 작업에서 함께 고칩니다.
-- 시간 보정은 경도 차이만 반영합니다(1954~1961년 표준시 UTC+8:30, 서머타임 기간은 반영하지 않음).
+- **시주의 23시대 처리와 경도 보정은 1.1.0 그대로입니다.** 23시는 그날 일주에 자시를 붙이고(야자시), 경도 보정은 분만 빼는 간단한 셈입니다. 절입과 무관한 사람들의 시주가 바뀌지 않도록 1.2.0에서 고치지 않았습니다.
+- **시각을 받는 함수의 기본 시계는 고정 UTC+9(`clock: 'kst-fixed'`)입니다.** 1908~1911·1954~1961년(UTC+8:30)과 서머타임 기간에는 `clockNotice`로 알립니다. 그때의 시계로 적은 시각이면 `clock: 'korea-legal'`을 쓰세요.
+- **절입 앞뒤 `uncertainMinutes`분 안은 앞인지 뒤인지 정할 수 없습니다.** 절기 시각이 분 단위이고 옛날일수록 지구 자전 보정값(ΔT)이 불확실하기 때문입니다. 이런 입력에는 `nearBoundary: true`를 답니다.
+
+  | 해 | `uncertainMinutes` |
+  |---|---|
+  | 1391~1499 | 4 |
+  | 1500~1599 | 3 |
+  | 1600~2042 | 1 |
+  | 2043~2050 | 2 (ΔT 예측이 해마다 벌어짐) |
+- 절기 시각은 분 단위입니다. 절입이 정오 직후 30초 안에 든 날은 표의 시각이 12:00이 되어, 날짜만 넣으면 새 달로 나옵니다. 1391~2050년에 사흘(1587-03-06, 1660-04-04, 1809-09-08)이고 1900년 뒤에는 없습니다. 이런 날에도 `sajuBoundary`가 함께 나옵니다.
+- "그날"은 한국 시각(고정 UTC+9)의 날짜입니다(한국천문연구원 발표 날짜와 같은 기준). 1908년 뒤로 법정 시계로는 절기의 날짜가 다른 때가 여덟 번 있습니다(1954 곡우·대설, 1955 동지, 1956 춘분, 1959 대서, 1960 우수, 1987 소만, 1988 대서). 이 가운데 사주 경계인 절은 1954년 대설 하나이고(고정 UTC+9로 12월 8일 00:29, 법정 시계로 12월 7일 23:59), `sajuBoundary.atLegalClock`에 그 시계의 시각이 나옵니다.
 
 ## 번들 크기
 
 v1.1.0부터는 날짜마다 데이터를 싣지 않고, **음력 달마다 1바이트**(월·윤달·대소)만 넣은 표(8,162달, 약 11KB)와 율리우스 적일 계산으로 날짜를 만듭니다. 범위는 4배 넓어졌지만 크기는 줄었습니다.
 
-| 포맷 | v1.0.9 (1900~2050) | v1.1.0 (1391~2050) |
-|------|------|------|
-| ESM | ~304 KB | ~95 KB |
-| CJS | ~304 KB | ~96 KB |
-| Gzip | ~103 KB | ~14 KB |
+v1.2.0은 24절기 절입 시각 15,845개를 넣었습니다. 이웃한 절기 간격이 24개 앞(한 해 전) 같은 절기의 간격과 ±13분 안에서만 달라서, 그 차이를 글자 하나로 적어 약 16KB(gzip 약 8KB)에 담았습니다. 표는 처음 쓸 때 한 번 풀어 메모리에 둡니다.
+
+| 포맷 | v1.0.9 (1900~2050) | v1.1.0 (1391~2050) | v1.2.0 (1391~2050, 절입 시각 표 포함) |
+|------|------|------|------|
+| ESM | ~304 KB | ~95 KB | ~122 KB |
+| CJS | ~304 KB | ~96 KB | ~123 KB |
+| Gzip | ~103 KB | ~14 KB | ~32 KB |
 
 ## 성능
 
@@ -607,9 +746,104 @@ v1.1.0부터는 날짜마다 데이터를 싣지 않고, **음력 달마다 1바
 | 양력→음력 변환 | < 0.1ms |
 | 음력→양력 변환 | < 0.1ms |
 | 갑자 계산 | < 0.1ms |
-| 절기 조회 (연도) | < 1ms |
+| 절기 조회 (연도) | 첫 호출 약 2ms(표 풀기), 그 뒤 < 0.1ms |
+| 시각을 받는 연주·월주 (`getGapjaAt`) | < 0.1ms |
 
 ## 변경 이력
+
+### v1.2.0 (개발 중 — 아직 npm에 올리지 않음)
+
+> **이 판은 아직 나오지 않았습니다.** 구현과 테스트는 끝났고 저장소의 판 번호는 `1.2.0-rc.1`이지만, npm에는 아직 올리지 않았습니다. 설치되는 판은 여전히 1.1.0입니다. 올리기 전에 `1.2.0-rc.1`을 `next` 꼬리표로 먼저 냅니다.
+
+**가장 큰 변화: 연주·월주의 경계를 실제 절입 시각으로 바꿉니다.** 1.1.0은 2/4·3/6 같은 양력 고정 날짜로 연주·월주를 바꿔서, 절입일 앞뒤에 태어난 사람의 월주(입춘 앞뒤는 띠까지)가 틀릴 수 있었습니다. 1900~2050년 55,152일 가운데 **월주 884일, 연주 107일**이 실제와 달랐습니다(1.6%).
+
+#### 절입 시각 표 (2026-11-22 완성)
+
+- 1390년 대설부터 2051년 입춘까지 24절기 **15,845개**를 분 단위 절대 시각(UTC)으로 담은 표를 만들었습니다. 저장소에는 사람이 읽는 꼴(`data/terms/solar-terms.tsv` — 해, 절기 번호, UTC 분, 출처)로 두고, 라이브러리에는 이 표에서 만든 압축 데이터만 넣습니다. 라이브러리 안에서 천문 계산을 하지 않습니다.
+- **1920~2028년(2,616개)**: 한국천문연구원 특일 정보(공공데이터포털 15012690)의 24절기 발표값을 그대로 씁니다. 발표값은 고정 UTC+9 시계에서 분으로 반올림한 값이라(2,616개를 견줘 반올림 가설 2,517개 일치, 버림 가설 1,406개) 9시간만 빼서 UTC로 옮겼습니다. 1950년 대한의 `2400`은 다음 날 00:00으로 읽습니다.
+- **1391~1919년, 2029~2050년(13,229개)**: 태양 겉보기 황경이 15도의 배수에 이르는 순간을 천문 계산으로 구해 분으로 반올림했습니다.
+- **검증**
+  - 1900~2100년: JPL Horizons(DE441)로 구한 절기 순간과 최대 3.4초 차이.
+  - 1391~1899년: JPL Horizons(DE441) 절기 순간 12,216개를 새로 받아 견줬습니다. 태양 위치 차이는 1700~1899년 최대 1.9초, 1391~1699년 최대 5.9초(1799년 전은 Horizons의 세차 모형이 다릅니다), 절대 시각 차이는 최대 2.6초입니다.
+  - 겹치는 구간: 1920~2028년의 계산값을 한국천문연구원 발표값과 견주면 날짜 2,615/2,616 일치(다른 하나가 1950년 대한 `2400`), 분 2,517 일치, 나머지 99개는 반올림 경계에서 5초 안의 1분 차이입니다. 그래서 1919→1920, 2028→2029의 이음매에서 값의 성질이 바뀌지 않습니다.
+  - 1391-02-05~2050-12-31 모든 날짜에서 표로 셈한 정오의 연주·월주를 독립 계산과 견줬습니다(아래 "정오 직후 절입" 사흘만 다름).
+- **ΔT(지구 자전 보정)**: 1900년 전은 Morrison·Stephenson·Hohenkerk·Zawilski (2021)의 표(Stephenson 외 2016의 갱신판)를 씁니다. JPL Horizons도 같은 모형입니다. 처음에는 2004년 판을 맞춘 다항식을 썼는데, 1391년에 Horizons와 163초까지 벌어져 바꿨습니다. 1900년 이후 값은 이 변경으로 바뀌지 않습니다.
+
+#### 앞뒤를 정할 수 없는 폭 `uncertainMinutes`
+
+표는 분 단위이고, 옛날일수록 ΔT가 불확실합니다. 그래서 절입 시각 앞뒤 몇 분 안에 태어난 경우는 앞인지 뒤인지 이 표로 정할 수 없다고 알려 줍니다(값은 그래도 견준 대로 냅니다). 폭은 `max(1, ceil((u + 30) / 60))`분이고, u는 그 해 절기 시각의 불확도(초), 30초는 분 반올림의 폭입니다.
+
+| 해 | `uncertainMinutes` |
+|---|---|
+| 1391~1499 | 4 |
+| 1500~1599 | 3 |
+| 1600~2042 | 1 |
+| 2043~2050 | 2 (ΔT 예측이 해마다 벌어짐) |
+
+표와 함께 `data/terms/uncertainty.tsv`로 싣습니다.
+
+#### 날짜만 넣었을 때: 그날 정오의 값 + `sajuBoundary`
+
+- `solarToLunar`·`lunarToSolar`·`getGapja`·`calculateSaju`(시 없이)의 연주·월주는 **그날 한국 시각(고정 UTC+9) 12:00의 값**입니다. 절입이 없는 날(한 해 353일쯤)은 하루 종일 같아 모호함이 없습니다. 절입이 든 날은 표의 절입 분이 12:00 이하면 새 달, 12:01부터면 앞 달 — 그날 가운데 더 긴 쪽이라 시각을 모를 때 틀릴 일이 가장 적습니다.
+- 마지막 선택 인자 `{ boundaryRule }`로 바꿀 수 있습니다: `'noon'`(기본), `'day-end'`(절입일은 하루 전체를 새 달 — 책력 표기), `'day-start'`(하루 전체를 앞 달), `'legacy-fixed'`(1.1.0 그대로 — 옮겨 가는 동안만, 2.0에서 없앰).
+- 새 필드 **`sajuBoundary`**: 그날 12절이 들면 "몇 시 몇 분에 바뀌는지, 앞이면 무엇·뒤면 무엇"을 담습니다(절, 한국 시각, UTC 시각, `before`·`after`의 연주·월주, 연주도 바뀌는지, 실린 쪽 `chosen`, `uncertainMinutes`, 법정 시계가 달랐던 때의 시각 `atLegalClock`). 절입이 없는 날은 `null`입니다.
+
+```ts
+solarToLunar(2024, 2, 4).sajuBoundary
+// { term: { name: '입춘', … }, at: { …, hour: 17, minute: 27 },
+//   before: { yearPillar: '계묘', monthPillar: '을축', … },
+//   after:  { yearPillar: '갑진', monthPillar: '병인', … },
+//   yearChanges: true, chosen: 'before', uncertainMinutes: 1, atLegalClock: null }
+solarToLunar(2024, 2, 4).gapja.yearPillar   // '계묘' — 1.1.0은 '갑진'(2/4 고정)
+```
+
+#### 시각을 넣었을 때
+
+- `calculateSaju`에 시·분을 주면 연주·월주를 절입 시각과 견줘 정확히 냅니다. 결과에 `sajuBoundary`, `nearBoundary`(입력이 절입에서 `uncertainMinutes` 안이면 `true`), `clockNotice`를 더합니다. 시주·일주·경도 보정의 셈은 1.1.0 그대로입니다.
+- 새 함수: `getGapjaAt`(시각까지 주고 연·월·일주), `getSajuBoundary`(그날의 경계 정보), `getJeolAround`(직전 절·다음 절), `getIpchun`(그 해 입춘), `getSajuMonthAt`(연도까지 받는 사주 월). 사용법은 위 [절입일의 연주·월주](#절입일의-연주월주-v120)와 API 문서.
+- 옵션 `clock`: `'kst-fixed'`(1.x 기본, 언제나 UTC+9), `'korea-legal'`(그때의 법정 시계 — 1908년 전 지방 평균시 UTC+8:27:52, 1908~1911·1954~1961 UTC+8:30, 서머타임 1948~1951·1955~1960·1987~1988), `{ utcOffsetMinutes }`. 기본값은 1.x에서 바꾸지 않고, 법정 시계가 달랐던 때면 `clockNotice`로 알립니다. 서머타임이 끝나며 두 번 지나간 시각은 `fold: 0 | 1`(기본 0 = 앞의 것), 건너뛴 시각은 전이 직전의 차이로 읽고 `clockNotice.message`에 적습니다.
+- 법정 시계의 전이 28개는 IANA tz database(2026f, 공개 도메인)의 `Asia/Seoul` 줄(`data/tz/asia-seoul.tzdata`)에서 만든 상수입니다. 플랫폼의 `Intl` 자료에 기대지 않습니다.
+- `korea-legal`·`{ utcOffsetMinutes }`의 경도 보정은 입력을 읽은 시계의 자오선(UTC 차이 ÷ 4분)을 기준으로 합니다. 기본 `kst-fixed`의 셈은 1.1.0 그대로입니다.
+
+#### 절기 조회 함수
+
+`getSolarTermsByYear`·`getSolarTermForDate`·`getSolarTermsByMonth`는 반환 꼴 그대로, 값을 표에서 냅니다(한국 시각 고정 UTC+9의 월·일·시·분). 지원 해가 2020~2030 → **1391~2050**으로 넓어지고, 2020~2030년의 값도 바뀝니다(1.1.0의 값은 해마다 같은 틀린 값 — 예: 2024년 입춘 5시 2분 → 17시 27분). 해 기준으로 묶을 때는 절입 순간을 라이브러리 날짜로 옮긴 해로 묶습니다. 그래서 1391~1581년(율리우스력)은 해마다 대한부터 다음 소한까지 24개, **1582년은 10월 5~14일이 없어 23개**입니다.
+
+- `getSupportedSolarTermYears()`·`SUPPORTED_SOLAR_TERM_YEARS`: 1391~2050. `SUPPORTED_SOLAR_TERM_YEARS`의 타입은 `readonly number[]`로 넓어졌습니다(1.1.0은 2020~2030의 리터럴 튜플).
+- `SOLAR_TERMS_DATA`: 없애지 않고 같은 꼴(`{ [year]: SolarTermDateTime[] }`)을 표에서 만들어 줍니다(처음 읽을 때 그 해만). `@deprecated` — `getSolarTermsByYear`를 쓰세요.
+- `getSajuMonth(month, day)`·`isBeforeLichun(month, day)`: 해를 받지 않아 고칠 수 없으므로 값은 1.1.0 그대로 두고 `@deprecated`를 달았습니다(`getSajuMonthAt`·`getIpchun`을 쓰세요).
+- 지원 해 밖에서 `getSolarTermsByYear`가 던지는 오류의 문구가 `Supported years: 1391~2050`으로 바뀌었습니다.
+
+#### 값이 달라지는 날
+
+| 구간 | 날 수 | 월주 다름 | 연주 다름 |
+|---|---|---|---|
+| 1900~2050 | 55,152 | 884 | 107 |
+| 1582-10-15~1899-12-31 (그레고리력) | 115,860 | 1,337 | 124 |
+| 1391-02-05~1582-10-04 (율리우스력) | 70,005 | 20,204 | 1,670 |
+
+- 율리우스력 구간은 1.1.0이 그레고리력 기준의 고정일(2/4·3/6…)을 그대로 대어 경계가 통째로 열흘쯤 어긋나 있었습니다.
+- 달라지는 날짜의 전체 목록은 `docs/1.2.0-changed-dates.tsv`(1900~2050, 884줄 — npm 꾸러미에도 들어 있음)와 `docs/1.2.0-changed-dates-pre1900.tsv`(1391~1899, 21,541줄 — 저장소에만)로 둡니다. 저장해 둔 사주를 고칠 때 쓰세요. 칸: `date`, `v110_year`·`v110_month`(1.1.0 값), `v120_year`·`v120_month`(1.2.0 기본값 = 정오), 절입일이면 `term`·`term_kst`(절과 절입 시각)와 `day_end_*`·`day_start_*`(다른 두 규칙의 값). 목록은 npm의 1.1.0을 실제로 돌려 만들었습니다(`npm run gen-changed-dates`).
+- 옛 값이 필요하면 `boundaryRule: 'legacy-fixed'`(1.1.0을 그대로 되살림 — 율리우스력 날짜에도 2/4·3/6… 그대로).
+- 음력 변환·일주·요일·`julianDay`·`lunarCalendarGanji`는 바뀌지 않습니다(241,017일 전수를 1.1.0과 같게 테스트로 고정). 함수 이름·인자·기존 필드도 그대로이고 더하기만 합니다.
+
+#### 정오 직후 절입 (알려진 제한으로 남김)
+
+절입이 정오 직후 30초 안(12:00:01~12:00:29)인 날은 표의 분이 12:00이 되어, 날짜만 넣으면 새 달로 나옵니다. 초 단위로 보면 정오에는 아직 앞 달입니다. 1391~2050년에 사흘(1587-03-06, 1660-04-04, 1809-09-08)이고 1900년 뒤에는 없습니다. 날짜만 넣은 결과와 `getGapjaAt(…, 12, 0)`의 결과가 언제나 같게 하려고 표 쪽을 정답으로 두었고, 이런 날에도 `sajuBoundary`가 함께 나옵니다.
+
+#### 테스트
+
+- 1.1.0과 전수 견줌(241,017일, npm의 1.1.0을 개발 의존성으로 실제로 돌림): 음력·일주·요일·`julianDay`·`lunarCalendarGanji`·음력 달 날수가 모두 같고, `legacy-fixed`가 1.1.0의 연주·월주를 그대로 되살리며, 달라진 날이 목록 파일과 같고 숫자가 위 표와 같음.
+- 모든 날짜에서 날짜만 넣은 값 = `getGapjaAt(…, 12, 0)`, `sajuBoundary`의 `before`·`after` = 앞날·뒷날의 값, 절입일이 아닌 날은 앞날과 같음.
+- 절입 시각 표: 원본 TSV와 전부 같음, 한국천문연구원 발표값 2,616개와 같음, 간격 14~16.5일·단조 증가, 해 기준 조회의 개수(1582년 23개).
+- 절입 앞뒤 1분 격자(1900~2050년 12절 × 151해 = 1,812개): 절입 분은 `after`, 1분 앞은 `before`, `nearBoundary`는 `uncertainMinutes` 안에서만 `true`.
+- `boundaryRule` 넷, `clock` 셋(법정 시계 전이 28개 앞뒤, 두 번·건너뛴 시각), 정오 직후 절입 사흘, 1954년 대설의 `atLegalClock`.
+- 독립 대조: [lunar-javascript](https://github.com/6tail/lunar-javascript)(MIT) 1.7.8의 절입 순간 기준 연주·월주와 1900~2050년 12절 ±1분 3,624개를 UTC+8 벽시계로 견줘 모두 같음(`src/__tests__/fixtures/lunar-javascript-grid.tsv`, `npm run gen-lunar-javascript-vectors`로 다시 만듦).
+- 개발 의존성 추가(꾸러미에는 들어가지 않음): `lunar-javascript`(MIT), `manseryeok-v110`(이 패키지 1.1.0의 별칭, MIT).
+
+#### 남은 일
+
+앱용 Dart 사본 갱신, npm에 `1.2.0-rc.1`을 `next` 꼬리표로 올리기.
 
 ### v1.1.0 (2026-11-20)
 
@@ -682,10 +916,6 @@ v1.1.0부터는 날짜마다 데이터를 싣지 않고, **음력 달마다 1바
 ## 라이선스
 
 MIT © [urstory](https://github.com/urstory)
-
-## 관련 프로젝트
-
-- [즐거운 사주](https://www.enjoysaju.com) - 한국 사주/운세 서비스
 
 ## 기여
 

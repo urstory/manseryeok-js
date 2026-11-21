@@ -43,4 +43,4 @@ febTerms.forEach(t => {
 });
 
 console.log('\n--- 참고 ---');
-console.log('절기 데이터 지원 연도: 2020 ~ 2030년');
+console.log('절기 데이터 지원 연도: 1391 ~ 2050년 (1.2.0부터, 한국 시각 고정 UTC+9)');
