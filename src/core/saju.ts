@@ -8,6 +8,7 @@ import { solarToLunar } from './solar-lunar-converter';
 import { formatGapjaByIds } from './gapja-calculator';
 import { checkBoundaryRule, momentPillars, normalizeOptions, requireJd } from './saju-boundary';
 import { getPillarById } from '../data/sixty-pillars';
+import { EOT_RANGE_TEXT, equationOfTimeAtUtcMinute } from './eot';
 import { InvalidDateError } from '../types';
 import type { BoundaryRule, ClockNotice, ClockOption, GapjaResult, SajuBoundary } from '../types';
 
@@ -48,6 +49,11 @@ export interface SajuResult {
   nearBoundary: boolean;
   /** 1.2.0: 시계 알림(기본 'kst-fixed'로 셈했는데 그때 한국 법정 시계가 UTC+9가 아니었던 경우 등). 시각을 주지 않으면 null */
   clockNotice: ClockNotice | null;
+  /**
+   * 1.3.0: 시간 보정에 더한 균시차(초, 소수 첫째 자리). `equationOfTime: true`로 보정했을 때만 있다.
+   * 양수면 해시계가 평균 태양시보다 빠르다(보정한 시각이 늦어진다).
+   */
+  equationOfTimeSeconds?: number;
 }
 
 /**
@@ -67,6 +73,12 @@ export interface SajuOptions {
   clock?: ClockOption;
   /** 1.2.0: 서머타임이 끝나며 두 번 지나간 시각에서 0 = 앞의 것(기본), 1 = 뒤의 것 */
   fold?: 0 | 1;
+  /**
+   * 1.3.0: 경도 보정에 균시차를 더해 진태양시로 시주를 정한다(기본 false = 1.2.0과 같음).
+   * 경도 보정을 하는 경우에만 쓴다(applyTimeCorrection이 false거나, clock이 { utcOffsetMinutes }인데
+   * longitude가 없으면 보정하지 않는다). 균시차 표는 1800-01-01 ~ 2050-12-31만 있어 그 밖의 날짜에 시를 주면 RangeError
+   */
+  equationOfTime?: boolean;
 }
 
 /**
@@ -96,6 +108,7 @@ export function calculateSaju(
   } = options;
   const rule = checkBoundaryRule(options.boundaryRule);
   const clock = options.clock ?? 'kst-fixed';
+  const eotOn = checkEquationOfTime(options.equationOfTime);
   if (solarHour !== undefined && (!Number.isFinite(Number(solarHour)) || !Number.isFinite(Number(solarMinute)))) {
     throw new InvalidDateError(`Invalid time: ${solarHour}:${solarMinute}`);
   }
@@ -108,6 +121,7 @@ export function calculateSaju(
   let nearBoundary = false;
   let clockNotice: ClockNotice | null = null;
   let offsetMinutes = 540;
+  let utcMinute = NaN;
   if (solarHour !== undefined) {
     const jd = requireJd(solarYear, solarMonth, solarDay);
     const m = momentPillars(jd, solarHour, solarMinute, { clock, fold: options.fold }, rule === 'legacy-fixed');
@@ -129,6 +143,7 @@ export function calculateSaju(
     nearBoundary = m.nearBoundary;
     clockNotice = m.clockNotice;
     offsetMinutes = m.offsetSec / 60;
+    utcMinute = m.x;
   }
 
   // 시주 계산
@@ -136,13 +151,29 @@ export function calculateSaju(
   let hourPillarHanja: string | null = null;
   let isTimeCorrected = false;
   let correctedTime: { hour: number; minute: number } | undefined;
+  let equationOfTimeSeconds: number | undefined;
 
   if (solarHour !== undefined) {
     let calcHour = solarHour;
     let calcMinute = solarMinute;
 
-    // 시간 보정 (진태양시)
-    if (applyTimeCorrection && clock === 'kst-fixed') {
+    // 1.3.0: 균시차를 더하는 진태양시. 기본(끔)은 아래 1.2.0 그대로
+    const corrects = applyTimeCorrection && (clock === 'kst-fixed' || clock === 'korea-legal' || options.longitude !== undefined);
+    if (eotOn && corrects) {
+      const meridian = clock === 'kst-fixed' ? 135 : offsetMinutes / 4;
+      const eot = equationOfTimeForSaju(solarYear, utcMinute);
+      // 평균 태양시 = 시계 − (자오선 − 경도)·4분, 진태양시 = 평균 태양시 + 균시차
+      const total = Math.round((meridian - longitude) * 4 - eot / 60);
+      const t = (((solarHour * 60 + solarMinute - total) % 1440) + 1440) % 1440;
+      calcHour = Math.floor(t / 60);
+      calcMinute = t % 60;
+      equationOfTimeSeconds = Math.round(eot * 10) / 10;
+      if (total !== 0) {
+        isTimeCorrected = true;
+        correctedTime = { hour: calcHour, minute: calcMinute };
+      }
+    } else if (applyTimeCorrection && clock === 'kst-fixed') {
+      // 시간 보정 (진태양시 — 경도만)
       // 1.1.0과 같은 셈(바꾸지 않는다)
       const standardMeridian = 135; // 한국 표준시 자오선 (UTC+9)
       const degreesDiff = standardMeridian - longitude;
@@ -199,7 +230,7 @@ export function calculateSaju(
     hourPillarHanja = stemChars[hourStemId] + branchChars[hourBranchId];
   }
 
-  return {
+  const result: SajuResult = {
     yearPillar: gapja.yearPillar,
     yearPillarHanja: gapja.yearPillarHanja,
     monthPillar: gapja.monthPillar,
@@ -215,6 +246,20 @@ export function calculateSaju(
     nearBoundary,
     clockNotice,
   };
+  if (equationOfTimeSeconds !== undefined) result.equationOfTimeSeconds = equationOfTimeSeconds;
+  return result;
+}
+
+function checkEquationOfTime(v: unknown): boolean {
+  if (v === undefined || v === false) return false;
+  if (v === true) return true;
+  throw new TypeError(`equationOfTime must be a boolean, got ${JSON.stringify(v)}`);
+}
+
+/** 시주 보정에 쓰는 균시차(초). 날짜가 표 밖(1800년 전)이면 RangeError */
+function equationOfTimeForSaju(year: number, utcMinute: number): number {
+  if (year < 1800) throw new RangeError(`Equation of time is available for ${EOT_RANGE_TEXT} only`);
+  return equationOfTimeAtUtcMinute(utcMinute);
 }
 
 /**

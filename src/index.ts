@@ -83,6 +83,11 @@ export { SOLAR_TERMS_DATA, SUPPORTED_SOLAR_TERM_YEARS, type SupportedSolarTermYe
 export type { SolarTermWithDate } from './core/solar-term';
 
 // ============================================
+// 1.3.0: 균시차
+// ============================================
+export { getEquationOfTime } from './core/eot';
+
+// ============================================
 // Data Access (for advanced usage)
 // ============================================
 export { SIXTY_PILLARS, getPillarById, getPillarByHangul } from './data/sixty-pillars';

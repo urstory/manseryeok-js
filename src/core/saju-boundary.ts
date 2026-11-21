@@ -60,7 +60,7 @@ export function requireJd(year: number, month: number, day: number): number {
   return jd;
 }
 
-function requireTime(hour: number, minute: number): void {
+export function requireTime(hour: number, minute: number): void {
   if (!Number.isInteger(hour) || hour < 0 || hour > 23 || !Number.isInteger(minute) || minute < 0 || minute > 59) {
     throw new InvalidDateError(`Invalid time: ${hour}:${minute}`);
   }

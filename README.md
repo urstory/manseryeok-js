@@ -318,6 +318,29 @@ const saju = calculateSaju(1990, 5, 15, 14, 0, {
 
 시간 보정을 하지 않으면 시주가 1시간 차이로 바뀔 수 있습니다.
 
+### 균시차까지 더한 진태양시 (`equationOfTime`, v1.3.0)
+
+경도만 보정한 시각은 엄밀히는 **지방 평균시**입니다. 실제 해의 남중(시태양시)은 한 해 동안 평균 태양시보다 최대 약 16분 빠르거나(11월 초) 14분 늦습니다(2월 중순). 이 차이가 **균시차**(equation of time)입니다. `equationOfTime: true`를 주면 경도 보정에 균시차를 더해 시주를 정합니다. 기본은 꺼져 있고, 끄면 결과가 1.2.0과 똑같습니다.
+
+```ts
+import { calculateSaju, getEquationOfTime } from '@fullstackfamily/manseryeok';
+
+// 1990-11-03 13:20 서울(경도 127)
+calculateSaju(1990, 11, 3, 13, 20).correctedTime;                          // { hour: 12, minute: 48 } — 경도만: 오시
+const r = calculateSaju(1990, 11, 3, 13, 20, { equationOfTime: true });
+r.correctedTime;          // { hour: 13, minute: 4 } — 경도 −32분, 균시차 +16.4분 → 16분을 빼서 미시
+r.equationOfTimeSeconds;  // 984.7 (보정에 쓴 균시차, 초)
+
+// 균시차만 보기(초, + = 해시계가 빠름). 시각을 주지 않으면 그날 12:00(입력 시계)
+getEquationOfTime(2024, 11, 3);   // 987 (16분 27초)
+getEquationOfTime(2024, 2, 11);   // -851.6 (−14분 12초)
+```
+
+- 보정하는 경우에만 씁니다: `applyTimeCorrection: false`이거나, `clock: { utcOffsetMinutes }`인데 `longitude`가 없으면 경도 보정과 함께 균시차도 쓰지 않습니다(`equationOfTimeSeconds`도 붙지 않음).
+- 보정량은 `(자오선 − 경도) × 4분 − 균시차`를 분으로 반올림한 하나의 값입니다. 자오선은 `kst-fixed`면 135도, `korea-legal`·`{ utcOffsetMinutes }`면 그 시계의 UTC 차이 ÷ 4분입니다.
+- **범위는 1800-01-01 ~ 2050-12-31입니다.** 그 전 날짜에 시를 주고 `equationOfTime: true`면 `RangeError`입니다(시를 주지 않으면 보정 자체가 없으므로 오류 없음).
+- 값은 날마다 12:00 UT의 균시차를 초 단위로 실은 표를 선형 보간합니다. JPL Horizons(DE441)로 구한 값과 표본 370개에서 최대 1.4초 차이입니다(만든 법과 대조는 [`data/eot/README.md`](data/eot/README.md)).
+
 ### 양력/음력 달력 만들기
 
 ```ts
@@ -639,8 +662,9 @@ r.sajuBoundary;       // { term: { name: '경칩', … }, at: { …, hour: 11, m
   - `applyTimeCorrection`: 시간 보정 적용 여부 (기본값: true)
   - `boundaryRule` (v1.2.0): 시를 주지 않았을 때 절입일의 연주·월주(기본 `'noon'`). 시를 주면 절입 시각과 견주므로 쓰지 않습니다. 단 `'legacy-fixed'`는 시를 주어도 1.1.0처럼 고정 날짜로 냅니다
   - `clock`·`fold` (v1.2.0): 입력 시각을 읽는 시계([한국 표준시와 서머타임](#한국-표준시와-서머타임-clock-v120))
+  - `equationOfTime` (v1.3.0): `true`면 경도 보정에 균시차를 더한다(기본 `false`, [균시차까지 더한 진태양시](#균시차까지-더한-진태양시-equationoftime-v130)). 1800년 전 날짜에 시를 주면 `RangeError`
 
-**반환값:** `SajuResult` (v1.2.0부터 `sajuBoundary`·`nearBoundary`·`clockNotice`도 줍니다. 시를 주지 않으면 `nearBoundary`는 `false`, `clockNotice`는 `null`)
+**반환값:** `SajuResult` (v1.2.0부터 `sajuBoundary`·`nearBoundary`·`clockNotice`도 줍니다. 시를 주지 않으면 `nearBoundary`는 `false`, `clockNotice`는 `null`. v1.3.0: `equationOfTime: true`로 보정했으면 `equationOfTimeSeconds`도 줍니다)
 
 시를 주면 연주·월주를 절입 시각과 견줘 정합니다(v1.2.0). 시주·일주·경도 보정의 셈은 1.1.0 그대로입니다.
 
@@ -652,6 +676,14 @@ console.log(saju.hourPillar); // '계미'
 console.log(saju.isTimeCorrected); // true
 console.log(saju.correctedTime); // { hour: 13, minute: 58 }
 ```
+
+### `getEquationOfTime(year, month, day, hour?, minute?, options?)` (v1.3.0)
+
+그 날짜·시각의 균시차(시태양시 − 평균 태양시, 초, 소수 첫째 자리)를 줍니다. 양수면 해시계가 평균 태양시보다 빠릅니다.
+
+- `hour`: 0~23(기본 12), `minute`: 0~59(기본 0) — 범위 밖이면 `InvalidDateError`
+- `options.clock`·`options.fold`: `getGapjaAt`과 같음
+- 1800-01-01 전이면 `RangeError`, 2050년 뒤면 `OutOfRangeError`
 
 ### `calculateSajuSimple(solarYear, solarMonth, solarDay, solarHour?)`
 
