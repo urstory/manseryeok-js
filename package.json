@@ -1,6 +1,6 @@
 {
   "name": "@fullstackfamily/manseryeok",
-  "version": "1.1.0",
+  "version": "1.2.0-rc.1",
   "description": "Korean Lunar Calendar (만세력) JavaScript Library - 1391~2050년 지원, DB 없는 순수 JavaScript 구현",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -8,6 +8,7 @@
   "files": [
     "dist",
     "examples",
+    "docs/1.2.0-changed-dates.tsv",
     "README.md",
     "LICENSE"
   ],
@@ -16,6 +17,8 @@
     "gen-terms-table": "node scripts/build-terms-table.mjs",
     "gen-tz-table": "node scripts/build-tz-table.mjs",
     "check-tables": "node scripts/check-tables.mjs",
+    "gen-changed-dates": "node scripts/build-changed-dates.mjs",
+    "gen-lunar-javascript-vectors": "node scripts/build-lunar-javascript-vectors.mjs",
     "build": "rollup -c",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -53,6 +56,8 @@
     "@types/jest": "^29.5.0",
     "@types/node": "^20.0.0",
     "jest": "^29.5.0",
+    "lunar-javascript": "1.7.8",
+    "manseryeok-v110": "npm:@fullstackfamily/manseryeok@1.1.0",
     "rollup": "^3.20.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.0",
